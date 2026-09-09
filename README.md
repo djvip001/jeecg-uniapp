@@ -3,7 +3,7 @@
 JeecgUniapp 是`JeecgBoot低代码平台`的配套`APP移动框架`，项目采用 Uniapp、Vue3.0、Vite、 Wot-design-uni、TypeScript 等最新技术栈，包括二次封装组件、路由拦截、请求拦截等功能。实现了与 `JeecgBoot` 完美对接:
 目前已经实现登录、用户信息、通讯录、公告、移动首页、九宫格、聊天、Online表单、仪表盘等功能，提供了丰富的组件!
 
-当前最新版本： 3.0.0（发布日期：2025-03-10）
+当前最新版本： 3.9.0（发布日期：2026-09-09）
 
 
 [![AUR](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](https://github.com/zhangdaiscott/jeecg-boot/blob/master/LICENSE)
@@ -48,7 +48,7 @@ JeecgUniapp 是`JeecgBoot低代码平台`的配套`APP移动框架`，项目采�
 - 产品官网： [http://jeecg.com/appIndex](http://jeecg.com/appIndex)
 - 开发文档： [https://help.jeecg.com/uniapp3](https://help.jeecg.com/uniapp3)
 - 官方支持： 遇到BUG可以在github上 [发Issue](https://github.com/jeecgboot/jeecg-uniapp/issues/new)
-- QQ交流群： 716488839
+- QQ交流群： 716913034
 
 ### 快速启动
 
