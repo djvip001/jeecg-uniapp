@@ -64,6 +64,9 @@ export function useLinkage(currentIndex?) {
             }
             console.log('联动刷新params', comp.params);
             console.log('联动刷新$chartInstance', $chartInstance);
+            if(!currentIndex.value){
+                currentIndex.value = comp.id;
+            }
             $chartInstance && $chartInstance[0] && $chartInstance[0].queryData(null, comp.params);
         } catch (e) {
           console.log('图表联动刷新异常', e);

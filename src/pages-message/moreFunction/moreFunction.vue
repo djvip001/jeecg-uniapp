@@ -21,7 +21,7 @@
             <view :class="['avatar', item.color]">
               <text :class="[`cuIcon-${item.icon}`]"></text>
             </view>
-            <view class="tableTxt ellipsis">系统</view>
+            <view class="tableTxt ellipsis">系统消息</view>
           </view>
         </template>
       </view>

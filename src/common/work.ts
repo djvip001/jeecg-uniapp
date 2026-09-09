@@ -10,11 +10,41 @@ const icon_prefix = '/static/index/128/'
 export const us = {
   data: [
     {
+      title: '流程待办',
+      icon: icon_prefix + 'hetong.png',
+      description: '流程待办',
+      useCount: 10000,
+      routeIndex: 'flowIndex',
+    },
+    {
+      title: '流程知会',
+      icon: icon_prefix + 'hetong.png',
+      description: '流程待办',
+      useCount: 10000,
+      routeIndex: 'ccIndex',
+    },
+    {
+      title: '通知公告',
+      icon: icon_prefix + 'tongzhi.png',
+      description: '查看企业对员工下发的通知公告',
+      useCount: 10000,
+      routeIndex: 'annotationList',
+      enabled: true,
+    },
+    {
       title: 'online',
       icon: icon_prefix + 'qingjia1.png',
       description: 'online',
       useCount: 10000,
       routeIndex: 'online',
+      enabled: true,
+    },
+    {
+      title: '设计表单',
+      icon: icon_prefix + 'chuchai.png',
+      description: '设计表单',
+      useCount: 10000,
+      routeIndex: 'desformList',
       enabled: true,
     },
     {
@@ -34,26 +64,11 @@ export const us = {
       enabled: true,
     },
     {
-      title: '流程待办',
-      icon: icon_prefix + 'gongwen.png',
-      description: '流程待办',
-      useCount: 10000,
-      routeIndex: 'flowIndex',
-    },
-    {
       title: '知识库',
       icon: icon_prefix + 'qingjia1.png',
       description: '知识库',
       useCount: 10000,
       routeIndex: 'knowledge',
-      enabled: true,
-    },
-    {
-      title: '通知公告',
-      icon: icon_prefix + 'tongzhi.png',
-      description: '查看企业对员工下发的通知公告',
-      useCount: 10000,
-      routeIndex: 'annotationList',
       enabled: true,
     },
     {
@@ -104,6 +119,33 @@ export const us = {
       routeIndex: 'mailHome',
       enabled: true,
     },
+    {
+      title: '协同工作',
+      icon: icon_prefix + 'hetong.png',
+      description: '协同工作',
+      useCount: 10000,
+      dot: false,
+      routeIndex: 'collaboration',
+      enabled: true,
+    },
+    {
+      title: '督办',
+      icon: icon_prefix + 'hetong.png',
+      description: '督办',
+      useCount: 10000,
+      dot: false,
+      routeIndex: 'supervise',
+      enabled: true,
+    },
+    {
+      title: '值班表',
+      icon: icon_prefix + 'hetong.png',
+      description: '值班表',
+      useCount: 10000,
+      dot: false,
+      routeIndex: 'duty',
+      enabled: true,
+    },
   ],
 }
 
@@ -135,7 +177,7 @@ export const os = {
     },
     {
       title: '合同',
-      icon: icon_prefix + 'hetong.png',
+      icon: icon_prefix + 'richeng.png',
       description: '合同',
       useCount: 10000,
     },

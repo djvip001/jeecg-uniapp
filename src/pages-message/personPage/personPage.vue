@@ -75,7 +75,7 @@ const paramsStore = useParamsStore()
 const router = useRouter()
 const params = paramsStore.getPageParams('personPage')
 const backRouteName = ref(params.backRouteName) ?? ''
-let data = params.data ?? {}
+const data = params.data ?? {}
 const toast = useToast()
 const options = [
   { key: 'call', label: '打电话' },
@@ -94,17 +94,32 @@ const handleChange = ({ option }) => {
     let platform = uni.getSystemInfoSync().platform
     switch (platform) {
       case 'android':
+        // #ifdef APP-PLUS
         uni.showActionSheet({
           itemList: [phone, '呼叫'],
           success: function (res) {
-            if (res.tapIndex == 1) {
-              plus.device.dial(phone, true)
+            if (res.tapIndex === 1) {
+              // 导入相关类
+              const Intent = plus.android.importClass('android.content.Intent')
+              const Uri = plus.android.importClass('android.net.Uri')
+
+              // 获取当前 Activity
+              const mainActivity = plus.android.runtimeMainActivity()
+
+              // 创建 Intent - 使用 ACTION_DIAL
+              const intent = new Intent(Intent.ACTION_DIAL)
+              const uri = Uri.parse('tel:' + phone)
+              intent.setData(uri)
+
+              // 启动拨号界面
+              mainActivity.startActivity(intent)
             }
           },
           complete: function (res) {
             console.log('安卓失败', res)
           },
         })
+        // #endif
         break
       case 'ios':
         //使用uni-app提供的借口
@@ -128,10 +143,12 @@ const handleChange = ({ option }) => {
   } else if (['message'].includes(option.key)) {
     //发短信
     //https://www.html5plus.org/doc/zh_cn/messaging.html
+    // #ifdef APP-PLUS
     let message = plus.messaging.createMessage(plus.messaging.TYPE_SMS)
     message.to = [phone] //这里数组中需要是字符串,否则ios会出现空白bug
     //message.body = "5011"
     plus.messaging.sendMessage(message)
+    // #endif
   } else if (['add'].includes(option.key)) {
     //加入通讯录
     uni.addPhoneContact({
@@ -143,10 +160,10 @@ const handleChange = ({ option }) => {
       weChatNumber: '',
       success: function () {
         console.log('success')
-        toast.warning('添加成功~')
+        toast.success('添加成功~')
       },
       fail: function (err) {
-        console.log('fail::',err)
+        console.log('fail::', err)
         toast.warning('添加失败~')
       },
     })

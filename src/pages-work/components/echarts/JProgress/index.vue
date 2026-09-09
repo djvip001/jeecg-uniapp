@@ -1,19 +1,19 @@
 <template>
-  <view class="content">
-    <statusTip v-if="pageTips.show" :status="pageTips.status"></statusTip>
-      <div v-else class="progress-wrapper" :style="styleObject">
-        <div @click="barHandleClick" class="progress-container" :style="{'flex-direction':titlePosition === 'middle'?'row':'column'}"
+  <view class="content" :style="getBodyStyle">
+      <statusTip v-if="pageTips.show" :status="pageTips.status"></statusTip>
+      <view v-else class="progress-wrapper" :style="styleObject">
+        <view @click="barHandleClick" class="progress-container" :style="{'flex-direction':titlePosition === 'middle'?'row':'column'}"
              :class="{ 'title-above': titlePosition === 'top', 'title-below': titlePosition === 'bottom' }">
-          <div v-if="label" class="progress-title" :style="titleStyle">{{ label }}</div>
-          <div class="progress-bar-wrapper" :style="progressStyle">
-            <div class="progress-bar" :style="progressBarStyle"></div>
-          </div>
-          <div class="progress-value" :style="valueStyle"
+          <view v-if="label" class="progress-title" :style="titleStyle">{{ label }}</view>
+          <view class="progress-bar-wrapper" :style="progressStyle">
+            <view class="progress-bar" :style="progressBarStyle"></view>
+          </view>
+          <view class="progress-value" :style="valueStyle"
                :class="{ 'value-top': valuePosition === 'top', 'value-middle': valuePosition === 'middle', 'value-bottom': valuePosition === 'bottom' }">
             {{ formatProgress }}
-          </div>
-        </div>
-    </div>
+          </view>
+        </view>
+      </view>
   </view>
 </template>
 
@@ -39,7 +39,14 @@ let [{ dataSource, reload, pageTips, config }, { queryData }] = useChartHook(
     props,
     initOptions,
 )
-
+const getBodyStyle = computed(() => {
+  let background = props.config.background || '#ffffff';
+  return {
+    width: props.horizontal ? '80vh' : '100%',
+    height: (props.size.height || 120) + 'px',
+    background: `${background}`,
+  };
+});
 // 格式化进度
 const formatProgress = computed(() => {
   return `${progress.value.toFixed(0)}%`;

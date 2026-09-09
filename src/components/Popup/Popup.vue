@@ -23,9 +23,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, useAttrs } from 'vue'
+import { ref, watch, useAttrs, inject } from 'vue'
 import { useToast, useMessage, useNotify, dayjs } from 'wot-design-uni'
 import { http } from '@/utils/http'
+import { isNullOrUnDef } from '@/utils/is'
 import popupReportModal from './components/popupReportModal.vue'
 defineOptions({
   name: 'Popup',
@@ -63,7 +64,8 @@ const props = defineProps({
   },
 })
 const emit = defineEmits(['change', 'update:modelValue'])
-
+// 流程底部按钮显示状态
+const isOperationVisible = inject('isOperationVisible', null)
 const toast = useToast()
 const showText = ref('')
 const attrs: any = useAttrs()
@@ -112,10 +114,16 @@ const handleClear = () => {
 const handleClick = () => {
   if (!attrs.disabled) {
     reportModal.show = true
+    if (!isNullOrUnDef(isOperationVisible)) {
+      isOperationVisible.value = false
+    }
   }
 }
 const handleClose = () => {
   reportModal.show = false
+  if (!isNullOrUnDef(isOperationVisible)) {
+    isOperationVisible.value = true
+  }
 }
 const handleChange = (data) => {
   console.log('选中的值：', data)
@@ -130,7 +138,7 @@ const handleChange = (data) => {
     position: absolute;
     right: 15px;
     top: calc(14px + 4px);
-    color: #585858;
+    color: var(--wot-input-clear-color);
     font-size: 15px;
   }
   &.clear {

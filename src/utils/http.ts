@@ -9,6 +9,11 @@ export const http = <T>(options: CustomRequestOptions) => {
   // 1. 返回 Promise 对象
   return new Promise<IResData<T>>((resolve, reject) => {
     const userStore = useUserStore()
+    // get请求加上随机数 防止缓存
+    if (options.method.toUpperCase() === 'GET') {
+      options.query = options.query ?? {};
+      options.query._t = Date.now() + Math.random()
+    }
     //update-begin-author:liusq date:20240422 for: post请求接口加签参数设置
     let params = options.query
     if (options.data && Object.keys(options.data).length > 0) {
@@ -31,6 +36,7 @@ export const http = <T>(options: CustomRequestOptions) => {
         'X-Sign': sign,
         'V-Sign': vSign,
         'X-TIMESTAMP': signMd5Utils.getTimestamp(),
+        'X-VERSION': 'v3',
       },
       ...options,
       // 响应成功
@@ -44,7 +50,15 @@ export const http = <T>(options: CustomRequestOptions) => {
             case 401:
               // 401错误  -> 清理用户信息，跳转到登录页
               userStore.clearUserInfo()
-              uni.navigateTo({ url: '/pages/login/login' })
+              uni.reLaunch({ url: '/pages/login/login' })
+              try {
+                if ((res.data as IResData<T>).message) {
+                  uni.showToast({
+                    icon: 'none',
+                    title: (res.data as IResData<T>).message,
+                  })
+                }
+              } catch (error) {}
               break
             // case 500:
             //   break

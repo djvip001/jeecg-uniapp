@@ -9,7 +9,7 @@
       ></wd-input>
       <view v-if="!!showText && !$attrs.disabled" class="u-iconfont u-icon-close" @click.stop="handleClear"></view>
     </view>
-    <wd-popup v-if="popupShow" position="bottom" v-model="popupShow">
+    <wd-popup v-if="popupShow" position="bottom" v-model="popupShow" @close="cancel">
       <view class="content">
         <view class="operation">
           <view class="cancel text-gray-5" @click.stop="cancel">取消</view>
@@ -35,11 +35,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, useAttrs } from 'vue'
+import { ref, watch, useAttrs, inject } from 'vue'
 import { useToast, useMessage, useNotify, dayjs } from 'wot-design-uni'
 import { http } from '@/utils/http'
 import DaTree from '@/uni_modules/da-tree/index.vue'
-import { isArray } from '@/utils/is'
+import { isArray, isNullOrUnDef } from '@/utils/is'
 defineOptions({
   name: 'CategorySelect',
 })
@@ -71,7 +71,7 @@ const props = defineProps({
 const emit = defineEmits(['change', 'update:modelValue'])
 const toast = useToast()
 const api = {
-  loadDictItem: '/sys/category/loadDictItem/',
+  loadDictItem: '/sys/category/loadDictItem',
   loadTreeData: '/sys/category/loadTreeData',
 }
 const showText = ref('')
@@ -80,13 +80,21 @@ const treeData = ref<any[]>([])
 const treeValue = ref([])
 const attrs = useAttrs()
 const defaultCheckedKeys: any = ref([])
+// 流程底部按钮显示状态
+const isOperationVisible = inject('isOperationVisible', null)
 const handleClick = () => {
   if (!attrs.disabled) {
     popupShow.value = true
+    if (!isNullOrUnDef(isOperationVisible)) {
+      isOperationVisible.value = false
+    }
   }
 }
 const cancel = () => {
   popupShow.value = false
+  if (!isNullOrUnDef(isOperationVisible)) {
+    isOperationVisible.value = true
+  }
 }
 const confirm = () => {
   const titles = treeValue.value.map((item) => item.title)
@@ -95,6 +103,9 @@ const confirm = () => {
   popupShow.value = false
   emit('update:modelValue', keys)
   emit('change', keys)
+  if (!isNullOrUnDef(isOperationVisible)) {
+    isOperationVisible.value = true
+  }
 }
 const handleTreeChange = (value, record) => {
   const { originItem, checkedStatus } = record
@@ -190,6 +201,7 @@ function loadItemByCode() {
       http
           .get(api.loadDictItem, { ids: value })
           .then((res: any) => {
+            console.log("分类字典默认值翻译", res)
             if (res.success) {
               const { result = [] } = res
               showText.value = result.join(',')
@@ -274,7 +286,7 @@ watch(
     position: absolute;
     right: 15px;
     top: calc(14px + 4px);
-    color: #585858;
+    color: var(--wot-input-clear-color);
     font-size: 15px;
   }
   &.clear {

@@ -1,5 +1,5 @@
 <template>
-  <view class="content">
+  <view class="content" :style="{height:izDrill?'calc(100% - 10px)':'100%'}">
     <statusTip v-if="pageTips.show" :status="pageTips.status"></statusTip>
     <!-- #ifdef H5 -->
     <EchartsMap
@@ -63,8 +63,9 @@ const chartOption = ref<any>({
     formatter: null,
   },
 })
+const mapName = ref("");
 let [
-  { dataSource, reload, pageTips, config, mapDataJson,mapName, getAreaCode, city_point },
+  { dataSource, reload, pageTips, config, mapDataJson, getAreaCode, city_point },
   {
     queryData,
     registerMap,
@@ -82,9 +83,9 @@ const mapObject = computed(() => ({ code: 'flyline:'+getAreaCode.value, data: ma
 // 初始化配置选项
 async function initOption(data) {
   let chartData = dataSource.value
-  let mapName = 'flyline:'+ await registerMap()
+  mapName.value = 'flyline:'+ await registerMap()
   try {
-    chartOption.value.geo.map = mapName;
+    chartOption.value.geo.map = mapName.value;
     let colorArr = getColors();
     let fromConvertData = getFromConvertData(chartData);
     //飞机的矢量图
@@ -94,7 +95,7 @@ async function initOption(data) {
       {
         name: '地图',
         type: 'map',
-        map: mapName,
+        map: mapName.value,
         geoIndex: 0,
         aspectScale: 0.75, //长宽比
         showLegendSymbol: false, // 存在legend时显示

@@ -25,6 +25,11 @@ interface CacheRoute {
 }
 export const beforEach = (to, from, next) => {
   const userStore = useUserStore()
+  // 防御性检查：to 为 undefined 时（路由未在 pages.json 注册）回退到首页
+  if (!to || !to.path) {
+    next({ path: HOME_PAGE })
+    return
+  }
   //update-begin-author:liusq---date:2025-03-20--for: 防止移动端oauth地址和PC不一致的问题
   if(to.path == '/oauth2-app/login'){
     let temp = location.href;

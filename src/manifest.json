@@ -19,7 +19,9 @@
       "Maps": {},
       "Messaging": {},
       "Contacts": {},
-      "Camera": {}
+      "Camera": {},
+      "Barcode": {},
+      "Push": {}
     },
     "distribute": {
       "android": {
@@ -32,28 +34,52 @@
           "<uses-feature android:name=\"android.hardware.camera.autofocus\"/>",
           "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
           "<uses-permission android:name=\"android.permission.CAMERA\"/>",
+          "<uses-permission android:name=\"android.permission.CALL_PHONE\"/>",
+          "<uses-permission android:name=\"android.permission.CALL_PRIVILEGED\"/>",
           "<uses-permission android:name=\"android.permission.GET_ACCOUNTS\"/>",
           "<uses-permission android:name=\"android.permission.READ_PHONE_STATE\"/>",
           "<uses-permission android:name=\"android.permission.CHANGE_WIFI_STATE\"/>",
           "<uses-permission android:name=\"android.permission.WAKE_LOCK\"/>",
           "<uses-permission android:name=\"android.permission.FLASHLIGHT\"/>",
+          "<uses-permission android:name=\"android.permission.RECORD_AUDIO\"/>",
+          "<uses-permission android:name=\"android.permission.MODIFY_AUDIO_SETTINGS\"/>",
           "<uses-feature android:name=\"android.hardware.camera\"/>",
-          "<uses-permission android:name=\"android.permission.WRITE_SETTINGS\"/>"
+          "<uses-permission android:name=\"android.permission.WRITE_SETTINGS\"/>",
+          "<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\" />",
+          "<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\" />",
+          "<uses-permission android:name=\"android.permission.MANAGE_EXTERNAL_STORAGE\" />",
+          "<uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />",
+          "<uses-permission android:name=\"android.permission.INTERNET\" />",
+          "<uses-permission android:name=\"com.huawei.appmarket.service.commondata.permission.GET_COMMON_DATA\" />"
         ],
         "minSdkVersion": 26,
-        "targetSdkVersion": 30,
+        "targetSdkVersion": 34,
         "abiFilters": [
           "armeabi-v7a",
           "arm64-v8a"
         ]
       },
-      "ios": {},
+      "ios": {
+        "permissions": {
+          "Documents": true
+        }
+      },
       "sdkConfigs": {
         "maps": {
           "amap": {
             "name": "amap_15931993294Bqxlq8EgG",
             "appkey_ios": "c913e46ffdf548ebc56ac1cf4d883e7e",
             "appkey_android": "c913e46ffdf548ebc56ac1cf4d883e7e"
+          }
+        },
+        "push": {
+          "unipush": {
+            "version": "2",
+            "offline": true,
+            "hms": {},
+            "vivo": {},
+            "meizu": {},
+            "honor": {}
           }
         }
       },
@@ -130,8 +156,8 @@
     "sdkConfigs": {
       "maps": {
         "amap": {
-          "key": "???",
-          "securityJsCode": "???",
+          "key": "20854e7d231ee339bfa3b277c840070c",
+          "securityJsCode": "7a542edee4a82e56ed88fef8ef42b5a5",
           "serviceHost": ""
         }
       }
@@ -139,7 +165,20 @@
   },
   "app-harmony": {
     "distribute": {
-      "bundleName": "uniapp.demo.test"
+      "bundleName": "uniapp.demo.test1",
+      "minPlatformVersion": 14,
+      "compatibleSDKVersion": 14,
+      "signingConfigs": {
+        "default": {
+          "certpath": "/Users/liaozhiyang/app-publish-p12/HarmonyOS/dev/lingang_dev.cer",
+          "keyAlias": "lingangProdKey",
+          "keyPassword": "000000230ED38504C1D83D153C1501F96DACF1CAD117140F1AC4DD88388430D4B47E72C0C502D9DF9F9031306F9191F404C77A",
+          "profile": "/Users/liaozhiyang/app-publish-p12/HarmonyOS/dev/lingang_profileDebug.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "/Users/liaozhiyang/app-publish-p12/HarmonyOS/dev/lingang.p12",
+          "storePassword": "000000230AF80433778FEFC231CCE43617B50F5A38BB5B5DF920E7782D68810E25AF3A8DC9084C9BD971FDBF9A775BDB52D037"
+        }
+      }
     }
   }
 }

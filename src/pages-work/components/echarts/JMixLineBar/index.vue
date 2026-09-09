@@ -1,5 +1,5 @@
 <template>
-  <view class="content">
+  <view class="content" :style="{height:izDrill?'calc(100% - 10px)':'100%'}">
     <statusTip v-if="pageTips.show" :status="pageTips.status"></statusTip>
 	<echartsUniapp v-else :option="option" :chartData="dataSource" :config="config" :id="id"></echartsUniapp>
   </view>
@@ -28,6 +28,8 @@ const props = defineProps({
 
 //最终图表配置项
 const option = ref({});
+// 本地推导的 seriesType：避免直接写入 props.config 触发 useEchart 的 deep watch → 死循环
+const localSeriesType = ref<{ series: string; type: string }[]>([])
 //获取默认配置
 let chartOption: any = {
   title: {
@@ -88,7 +90,7 @@ function initOption(data) {
     chartOption.series = [];
     dataset.dimensions.forEach((series, index) => {
       if (index > 0) {
-        let seriesType = props.config.seriesType.filter((item) => item.series == series);
+        let seriesType = localSeriesType.value.filter((item) => item.series == series);
         chartOption.series.push({
           type: seriesType && seriesType.length > 0 ? seriesType[0]['type'] : 'bar',
           color: colors[index-1]?.color?colors[index-1]?.color:"",
@@ -130,16 +132,14 @@ function initSeriesType(chartData) {
   //获取数据系列
   //@ts-ignore
   let seriesArr = [...new Set(chartData.map((item) => item['type']))];
-  //当前配置项的数据系列
-  let configSeriesArr = props.config.seriesType || [];
+  //当前配置项的数据系列（本地 ref，避免写入 props 触发 deep watch → 死循环）
   //@ts-ignore
-  let oldSeriesArr = [...new Set(configSeriesArr.map((item) => item['series']))];
+  let oldSeriesArr = [...new Set(localSeriesType.value.map((item) => item['series']))];
   //判断是否相等，不相等才赋新值
   if (!isArrayEqual(seriesArr, oldSeriesArr)) {
-    let newSeriesType = seriesArr.map((series) => {
+    localSeriesType.value = seriesArr.map((series) => {
       return { series, type: 'bar' };
     });
-    props.config.seriesType = newSeriesType;
   }
 }
 /**

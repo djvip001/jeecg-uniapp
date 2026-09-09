@@ -8,7 +8,9 @@ import { createSSRApp } from 'vue'
 
 import App from './App.vue'
 import { prototypeInterceptor, requestInterceptor, routeInterceptor } from './interceptors'
+//#ifndef MP-WEIXIN
 import { registerGlobComp } from '@/components/registerGlobComp';
+// #endif
 import store from './store'
 import router from './router'
 

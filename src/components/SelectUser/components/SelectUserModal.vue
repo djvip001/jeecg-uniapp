@@ -16,13 +16,16 @@
           :default-page-size="15"
         >
           <template #top>
-            <wd-search
-              hide-cancel
-              :placeholder="search.placeholder"
-              v-model="search.keyword"
-              @search="handleSearch"
-              @clear="handleClear"
-            />
+            <view class="search-wrap">
+              <wd-switch size="small" v-model="isUsernameSearch" />
+              <wd-search
+                hide-cancel
+                :placeholder="search.placeholder"
+                v-model="search.keyword"
+                @search="handleSearch"
+                @clear="handleClear"
+              />
+            </view>
           </template>
           <template v-if="multi">
             <wd-checkbox-group shape="square" v-model="checkedValue">
@@ -37,8 +40,13 @@
                       :src="getAvatar(item.avatar)"
                     ></wd-img>
                     <view class="subContent">
-                      <text>账号：{{ item.username }}</text>
-                      <text>姓名：{{ item.realname }}</text>
+                      <view class="user-title">
+                        <text class="realname">{{ item.realname }}</text>
+                        <text class="username">账号：{{ item.username }}</text>
+                      </view>
+                      <text v-if="item.orgCodeTxt" class="department">
+                        部门：{{ item.orgCodeTxt }}
+                      </text>
                     </view>
                   </view>
                   <view class="right" @click.stop>
@@ -66,8 +74,13 @@
                         :src="getAvatar(item.avatar)"
                       ></wd-img>
                       <view class="subContent">
-                        <text>账号：{{ item.username }}</text>
-                        <text>姓名：{{ item.realname }}</text>
+                        <view class="user-title">
+                          <text class="realname">{{ item.realname }}</text>
+                          <text class="username">账号：{{ item.username }}</text>
+                        </view>
+                        <text v-if="item.orgCodeTxt" class="department">
+                          部门：{{ item.orgCodeTxt }}
+                        </text>
                       </view>
                     </view>
                     <view class="right" @click.stop>
@@ -133,16 +146,25 @@ const props = defineProps({
     type: Array,
     default: [],
   },
+  userlistUrl: {
+    type: String,
+    default: '/sys/user/list',
+  },
+  showIds: {
+    type: String,
+    default: '',
+  },
 })
 const emit = defineEmits(['change', 'close'])
 const toast = useToast()
 const show = ref(true)
+const isUsernameSearch = ref(true)
 const api = {
-  selectUserList: '/sys/user/selectUserList',
-  userlist: '/sys/user/list',
+  userlist: props.userlistUrl,
 }
 const paging = ref(null)
 const dataList = ref([])
+const allDataList = ref([])
 const checkedValue: any = ref(props.multi ? [] : '')
 const checkboxRef = ref(null)
 const search = reactive({
@@ -167,7 +189,7 @@ const handleConfirm = () => {
     value = [checkedValue.value]
   }
   value.forEach((rowKey, index) => {
-    const findIndex = dataList.value.findIndex((item) => item[props.rowKey] === rowKey)
+    const findIndex = allDataList.value.findIndex((item) => item[props.rowKey] === rowKey)
     if (findIndex == -1) {
       // 传进来选中的用户可能在第二页（还没加载进来）
       const index = props.selectedUser.findIndex((item) => item[props.rowKey] === rowKey)
@@ -183,7 +205,7 @@ const handleConfirm = () => {
         }
       }
     } else {
-      result.push(dataList.value[findIndex])
+      result.push(allDataList.value[findIndex])
     }
   })
   show.value = false
@@ -233,14 +255,26 @@ const getAvatar = (url) => {
 }
 
 const queryList = (pageNo, pageSize) => {
-  const pararms = { pageNo, pageSize, column: 'createTime', order: 'desc' }
+  const pararms = { pageNo, pageSize }
   if (search.keyword) {
     pararms[search.field] = `*${search.keyword}*`
+  }
+  if (props.showIds) {
+    pararms.id = props.showIds
+    pararms.isMultiTranslate = true
   }
   http
     .get(`${api.userlist}`, pararms)
     .then((res: any) => {
       if (res.success && res.result.records) {
+        if (allDataList.value.length === 0) {
+          allDataList.value = res.result.records ?? []
+        } else {
+          res.result.records.forEach((item) => {
+            const hasData = allDataList.value.some((a) => a.username === item.username)
+            !hasData && allDataList.value.push(item)
+          })
+        }
         paging.value.complete(res.result.records ?? [])
       } else {
         paging.value.complete(false)
@@ -248,8 +282,22 @@ const queryList = (pageNo, pageSize) => {
     })
     .catch((err) => {})
 }
+watch(
+  () => isUsernameSearch.value,
+  () => {
+    if (isUsernameSearch.value) {
+      search.field = 'realname'
+      search.placeholder = '输入姓名可搜索'
+    } else {
+      search.field = 'username'
+      search.placeholder = '输入账号可搜索'
+    }
+  },
+  { immediate: true },
+)
 const init = () => {
-  if (props.selected.length) {
+  allDataList.value = []
+  if (props.selected && props.selected.length) {
     if (props.multi) {
       if (isArray(props.selected)) {
         checkedValue.value = props.selected
@@ -285,6 +333,15 @@ init()
 </script>
 
 <style lang="scss" scoped>
+.search-wrap {
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  padding-left: 10px;
+  :deep(.wd-search) {
+    flex: 1;
+  }
+}
 :deep(.wd-cell) {
   --wot-color-white: tranparent;
   --wot-cell-padding: 0;
@@ -306,22 +363,60 @@ init()
   align-items: center;
   justify-content: space-between;
   background: #fff;
-  padding: 16px;
-  margin-top: 16px;
+  padding: 12px;
+  margin: 10px 12px 0;
+  border: 1px solid #eeeeee;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 3%);
   .left {
+    flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
     text-align: left;
     :deep(.avatar) {
-      margin-right: 8px;
+      flex-shrink: 0;
+      margin-right: 12px;
       background-color: #e9e9e9;
     }
     .subContent {
+      flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
+      gap: 5px;
+      .user-title {
+        display: flex;
+        align-items: baseline;
+        min-width: 0;
+        .realname {
+          flex-shrink: 0;
+          color: #667085;
+          font-size: 15px;
+          font-weight: 400;
+        }
+        .username {
+          overflow: hidden;
+          margin-left: 10px;
+          color: #a0a7b2;
+          font-size: 12px;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
+      .department {
+        overflow: hidden;
+        color: #8a94a3;
+        font-size: 12px;
+        line-height: 18px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
     }
   }
   .right {
+    flex-shrink: 0;
+    margin-left: 12px;
     :deep(.wd-checkbox) {
       margin-bottom: 0;
     }

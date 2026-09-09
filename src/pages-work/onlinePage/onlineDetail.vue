@@ -30,7 +30,7 @@
 </template>
 
 <script lang="ts" setup>
-import OnlineLoader from '@/components/online/online-loader.vue'
+import OnlineLoader from '@/pages-work/components/online/online-loader.vue'
 import router from '@/router'
 import {onLoad} from "@dcloudio/uni-app";
 import {getRefPromise} from "@/utils";

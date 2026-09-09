@@ -1,5 +1,5 @@
 <template>
-  <view class="content">
+  <view class="content" :style="{height:izDrill?'calc(100% - 10px)':'100%'}">
     <statusTip v-if="pageTips.show" :status="pageTips.status"></statusTip>
     <echartsUniapp v-else :option="option" :chartData="dataSource" :config="config" :id="id" ></echartsUniapp>
   </view>
@@ -78,11 +78,23 @@ function initOption(data) {
     let lineType = config.option.series[0].lineType
     chartOption.series[0].smooth = lineType == 'line' ? false : true
     chartOption.series[0].areaStyle = lineType == 'area' ? {} : null
-
+    //设置标记点大小
+    let seriesOpt = config.option.series[0];
+    chartOption.series[0].symbol = seriesOpt?.symbol ? seriesOpt?.symbol:"emptyCircle" ;
+    chartOption.series[0].symbolSize = seriesOpt?.symbolSize || 3;
+    //折线宽度
+    chartOption.series[0].lineStyle = {
+      width: seriesOpt?.lineWidth || 1
+    };
     // 合并配置
     if (props.config && config.option) {
       merge(chartOption, config.option)
       setLegendTop(chartOption, config)
+      //设置配色
+      let customColor = props?.config?.option?.customColor;
+      if(customColor && customColor.length>0){
+        chartOption.series[0].itemStyle = {color:customColor[0].color}
+      }
       chartOption['tempData'] = chartData;
       chartOption = commonOption(chartOption, config)
       chartOption = handleTotalAndUnit(props.compName, chartOption, config, chartData)

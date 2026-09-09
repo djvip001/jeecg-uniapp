@@ -72,6 +72,9 @@ async function initOption(data){
     imageSrc.value = getFileAccessHttpUrl(url);
   }
 };
+defineExpose({
+  queryData
+});
 </script>
 
 <style scoped lang="scss">

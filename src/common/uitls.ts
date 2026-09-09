@@ -1,11 +1,25 @@
+import { http } from '@/utils/http'
 import pagesJson from '../pages.json'
+import { parse } from 'crypto-js/enc-utf8'
+import { encrypt } from 'crypto-js/aes'
+import pkcs7 from 'crypto-js/pad-pkcs7'
 // 引入uni-parse-pages
 import pagesJsonToRoutes from 'uni-parse-pages'
 import { colorPanel } from './constants'
+import { isArray } from '@/utils/is'
 import tip from './tip'
-import { platform, isH5, isApp, isMp, isMpWeixin, isMpAplipay, isMpToutiao } from '@/utils/platform'
+import {
+  platform,
+  isH5,
+  isApp,
+  isHarmony,
+  isMp,
+  isMpWeixin,
+  isMpAplipay,
+  isMpToutiao,
+} from '@/utils/platform'
 import { isString } from './is'
-
+import { intersection } from 'lodash-es';
 /**
  * 缓存,默认有效期2小时
  * @param key 缓存key
@@ -326,7 +340,7 @@ export function getRandomColor() {
 
 // 消除后缀：
 export const getPlaceholder = (attrs: any = {}) => {
-  let label = attrs.label
+  let label = attrs.label ?? ''
   if (label.endsWith('：') || label.endsWith(':')) {
     label = label.substr(0, label.length - 1)
   }
@@ -533,7 +547,7 @@ function rad(d) {
   return (d * Math.PI) / 180.0
 }
 
-export function downloadFile(obj) {
+export function downloadFile(obj, androidDownloadTip = false) {
   let url = ''
   if (isMp) {
     if (obj.currentTarget) {
@@ -544,9 +558,9 @@ export function downloadFile(obj) {
       url = getFileAccessHttpUrl(obj)
       downloadNH5(url)
     }
-  } else if (isApp) {
+  } else if (isApp || isHarmony) {
     url = encodeURI(obj)
-    downloadNH5(url)
+    downloadNH5(url, androidDownloadTip)
   } else if (isH5) {
     url = getFileAccessHttpUrl(obj)
     window.open(url)
@@ -556,17 +570,22 @@ export function downloadFile(obj) {
  * 非H5文件下载地址
  * @param 文件路径 url
  */
-function downloadNH5(url) {
+function downloadNH5(url, androidDownloadTip = false) {
   const image_arr = ['png', 'jpg', 'jpeg']
   const fileType = url.split('.').pop()
+  uni.showLoading({
+    title: '加载中...',
+    mask: true,
+  })
   uni.downloadFile({
     url,
     success: (res) => {
+      uni.hideLoading()
       if (res.statusCode == 200) {
         let filePath = res.tempFilePath
         const system = uni.getSystemInfoSync().platform
         if (system == 'ios') {
-          filePath = encodeURI(filePath)
+          // filePath = encodeURI(filePath)
         }
         if (isMp) {
           const suffix = getSuffix(url).toLowerCase()
@@ -583,12 +602,12 @@ function downloadNH5(url) {
                 console.log('打开文档成功')
               },
               fail: (res) => {
-                console.log('打开文档失败')
+                console.log('打开文档失败', res)
                 tip.error('不支持打开此格式', true)
               },
             })
           }
-        } else if (isApp) {
+        } else if (isApp || isHarmony) {
           const suffix = getSuffix(url).toLowerCase()
           if (image_arr.indexOf(suffix) != -1) {
             // 预览图片
@@ -596,33 +615,159 @@ function downloadNH5(url) {
               urls: [filePath],
             })
           } else {
-            uni.saveFile({
-              tempFilePath: filePath,
-              success: (res) => {
-                // 保存成功并打开文件
-                tip.success('保存成功')
-                uni.openDocument({
-                  filePath: res.savedFilePath,
-                  success: function (res) {
-                    console.log('openDocument', res)
+            if (isHarmony) {
+              if (androidDownloadTip) {
+                // 鸿蒙下载文件并提示保存路径
+                uni.saveFile({
+                  tempFilePath: filePath,
+                  fileType,
+                  success: (saveRes) => {
+                    const savedPath = saveRes.savedFilePath || ''
+                    uni.showModal({
+                      title: '提示',
+                      content: `文件下载成功，已保存到:\n${savedPath}`,
+                      confirmText: '打开文件',
+                      cancelText: '关闭',
+                      success: (modalRes) => {
+                        if (modalRes.confirm) {
+                          uni.openDocument({
+                            filePath: savedPath,
+                            fileType,
+                            fail: () => {
+                              uni.showToast({ title: '暂不支持打开此类型', duration: 2000 })
+                            },
+                          })
+                        }
+                      },
+                    })
                   },
-                  fail() {
-                    uni.showToast({
-                      title: '暂不支持打开此类型',
-                      duration: 2000,
+                  fail: () => {
+                    // 保存失败则直接打开临时文件
+                    uni.openDocument({
+                      filePath,
+                      fileType,
+                      fail: () => {
+                        tip.error('不支持打开此格式', true)
+                      },
                     })
                   },
                 })
-              },
-              fail: () => tip.alert('保存失败'),
-            })
+              } else {
+                uni.openDocument({
+                  filePath,
+                  fileType,
+                  success: () => {
+                    console.log('打开文档成功')
+                  },
+                  fail: () => {
+                    tip.error('不支持打开此格式', true)
+                  },
+                })
+              }
+            } else if (system == 'ios') {
+              uni.openDocument({
+                filePath,
+                fileType,
+                success: (res) => {
+                  console.log('打开文档成功')
+                },
+                fail: (res) => {
+                  console.log('打开文档失败', res)
+                  tip.error('不支持打开此格式', true)
+                },
+              })
+            } else {
+              if (androidDownloadTip && isApp) {
+                // 或者直接构造路径（更推荐）
+                let fileName = url.split('/').pop()
+				if(fileName.indexOf('download?fileId')>=0){
+					fileName = new Date().getTime()
+				}
+                const dtask = plus.downloader.createDownload(
+                  url,
+                  {
+                    filename: `_downloads/KGOA/${fileName}`,
+                  },
+                  function (d, status) {
+                    console.log('下载d:', d)
+                    // d为下载的文件对象
+                    if (status === 200) {
+                      // 下载成功,d.filename是文件在保存在本地的相对路径，使用下面的API可转为平台绝对路径
+                      const fileSaveUrl = plus.io.convertLocalFileSystemURL(d.filename)
+                      uni.showModal({
+                        title: '提示',
+                        content: '文件下载成功，是否打开所在目录？',
+                        success: (res) => {
+                          if (res.confirm) {
+                            // plus.runtime.openFile(d.filename) // 选择软件打开文件
+                            const fileDir = fileSaveUrl.substring(0, fileSaveUrl.lastIndexOf('/'))
+                            console.log('打开目录fileDir:', fileDir)
+                            // 使用系统文件管理器打开目录
+                            plus.runtime.openFile(fileDir, {}, function (e) {
+                              // 如果直接打开目录失败，可以尝试其他方式
+                              console.log('打开目录失败:', e.message)
+                              // 备选方案：使用Android Intent
+                              const fileDirReplace = fileSaveUrl.replace(
+                                  '/storage/emulated/0/',
+                                  '',
+                              )
+                              if (plus.os.name === 'Android') {
+                                uni.showModal({
+                                  title: '提示',
+                                  content: `文件已保存到应用目录，请在文件管理器中查找:\n${fileDirReplace}`,
+                                  showCancel: false,
+                                })
+                              }
+                            })
+                          }
+                        },
+                      })
+                    } else {
+                      // 下载失败
+					  uni.hideLoading()
+                      plus.downloader.clear() // 清除下载任务
+                    }
+                  },
+                )
+                dtask.start()
+              } else {
+                uni.saveFile({
+                  tempFilePath: filePath,
+                  fileType,
+                  success: (res) => {
+                    // 保存成功并打开文件
+                    tip.success('保存成功')
+                    uni.hideLoading()
+                    uni.openDocument({
+                      filePath: res.savedFilePath,
+                      success: function (res) {
+                        console.log('openDocument', res)
+                      },
+                      fail() {
+                        uni.showToast({
+                          title: '暂不支持打开此类型',
+                          duration: 2000,
+                        })
+                      },
+                    })
+                  },
+                  fail: () => {
+                    // 确保在saveFile失败时也隐藏加载弹窗
+                    uni.hideLoading()
+                    tip.alert('保存失败')
+                  },
+                })
+              }
+            }
           }
         }
       } else {
+        uni.hideLoading()
         tip.alert('文件异常')
       }
     },
     fail: (err) => {
+      uni.hideLoading()
       tip.alert('下载失败')
     },
   })
@@ -754,3 +899,159 @@ export function stringToDate(dateString) {
   return newDate;
 }
 
+export const getDictItemsByCode = async (code) => {
+  const dictItems = uni.getStorageSync('sysAllDictItems')
+  // 1.先从本地缓存
+  if (dictItems && dictItems[code]) {
+    return dictItems[code]
+  }
+  // 2.再从后端获取
+  const res: any = await http.get(`/sys/dict/getDictItems/${code}`)
+  if (res.success) {
+    return res.result
+  }
+  return []
+}
+
+// ================== 密码加密相关 ==================
+// 密码加密统一使用 AES CBC 模式，前后端 key 和 iv 必须保持一致
+// AES_KEY 和 AES_IV 需与后端配置完全一致，否则加密/解密会失败
+// ================== 密码加密相关 ===========BEGIN=======
+
+// AES加密key和iv常量
+export const AES_KEY = '1234567890adbcde'
+export const AES_IV = '1234567890hjlkew'
+
+/**
+ * AES CBC 加密，使用全局常量 AES_KEY 和 AES_IV
+ * @param plainText 明文
+ * @returns 加密后的密文
+ */
+export function encryptAESCBC(plainText: string): string {
+  const key = parse(AES_KEY);
+  const iv = parse(AES_IV);
+  // CBC 是 AES 的默认模式，无需显式指定 mode 参数
+  return encrypt(plainText, key, {
+    iv: iv,
+    padding: pkcs7
+  }).toString();
+}
+// ================== 密码加密相关 =============END=====
+
+/*
+* 跳转路由 (如果当前页面栈有目标页面，则返回目标页面，否则跳转目标页面)
+* @param {Object} params
+* @param {string} params.routeName - 路由名称
+* @param {string} params.routePath - 路由路径
+* @param {string} params.routeMethod - 路由方法
+* @returns {void}
+*/
+export const goRoute = ({
+  routeName,
+  routePath,
+  routeMethod = 'push',
+  router,
+}: {
+  routeName?: string
+  routePath?: string
+  routeMethod?: string
+  router: any
+}) => {
+  const pages = getCurrentPages()
+  if (pages.length > 1) {
+    if (routeName) {
+      const findPageIndex = pages.findIndex((item) => {
+        const route = item.route
+        const name = route.split('/').pop()
+        return name === routeName
+      })
+      if (findPageIndex == -1) {
+        router[routeMethod]({ name: routeName })
+      } else {
+        router.back({ delta: pages.length - findPageIndex - 1, animationType: 'pop-out' })
+      }
+    } else if (routePath) {
+      const findPageIndex = pages.findIndex((item) => {
+        const route = item.route
+        return route === routePath
+      })
+      if (findPageIndex == -1) {
+        router[routeMethod]({ path: routePath })
+      } else {
+        router.back({ delta: pages.length - findPageIndex - 1, animationType: 'pop-out' })
+      }
+    }
+  } else {
+    router[routeMethod]({ name: routeName })
+  }
+}
+
+// ios中中文字符串转义
+export const iosStrUnescape = (str: string) => {
+  const globalData = getApp().globalData
+  const { systemInfo, navHeight } = globalData
+  const { platform } = systemInfo
+  // 处理 %uXXXX 格式的Unicode编码
+  console.log('str1', str)
+  if (isString(str) && platform === 'ios') {
+    console.log('str2', str)
+    try {
+      // 处理 %uXXXX 格式的Unicode编码
+      if (str.includes('%u')) {
+        console.log('str3', str)
+        str = unescape(str)
+      }
+    } catch (e) {
+      // 如果解码失败，使用原始值
+      console.log('decode error:', e)
+    }
+  }
+  console.log('str4', str)
+  return str
+}
+/**
+ * 确定是否存在权限
+ */
+export function hasFormPermission(value, allCodeList = [], formData = {}): boolean {
+  if (!isArray(value) && allCodeList && allCodeList.length > 0) {
+    //= ============================工作流权限判断-显示-begin==============================================
+    if (formData) {
+      const code = value as string
+      if (hasBpmPermission(code, '1', formData) === true) {
+        return true
+      }
+    }
+    //= ============================工作流权限判断-显示-end==============================================
+    return allCodeList.includes(value)
+  }
+  return (intersection(value, allCodeList) as string[]).length > 0
+}
+/**
+ * 是否禁用组件
+ */
+export function isFormDisabledAuth(value?, allCodeList = [], formData = {}): boolean {
+  //= ============================工作流权限判断-禁用-begin==============================================
+  if (formData) {
+    const code = value as string
+    if (hasBpmPermission(code, '2', formData) === true) {
+      return true
+    }
+  }
+  //= ============================工作流权限判断-禁用-end==============================================
+  return !hasFormPermission(value, allCodeList, formData)
+}
+
+export function hasBpmPermission(code, type, formData: any = {}) {
+  // 禁用-type=2
+  // 显示-type=1
+  const codeList: string[] = []
+  const permissionList = formData.permissionList
+  if (permissionList && permissionList.length > 0) {
+    for (const item of permissionList) {
+      if (item.type === type) {
+        codeList.push(item.action)
+      }
+    }
+  }
+  return codeList.indexOf(code) >= 0
+}

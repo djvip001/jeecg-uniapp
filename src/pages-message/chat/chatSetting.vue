@@ -149,6 +149,16 @@ const handleRename = () => {
   }
 }
 const handleExit = () => {
+  // 群主退出群聊前，须保证除自己外已有管理员
+  if (pageType.value === 'group' && groupLevel.value === 'leader') {
+    const hasOtherAdmin = authList.value.some(
+      (item) => item.id !== myuid.value && item.groupLevel === 'admin',
+    )
+    if (!hasOtherAdmin) {
+      toast.warning('必须先设置管理员')
+      return
+    }
+  }
   message
     .confirm({
       msg: `退出${typeLabel.value}后，聊天列表会消失`,
@@ -165,7 +175,7 @@ const handleExit = () => {
           if (res.success) {
             uni.$emit('chatList:reload')
             setTimeout(() => {
-              router.pushTab({ name: 'message' })
+              router.replaceAll({ name: 'home', params: { current: 'message' } })
             }, 100)
           } else {
             toast.warning(res.message)
@@ -193,7 +203,7 @@ const handleDissolve = () => {
           if (res.success) {
             uni.$emit('chatList:reload')
             setTimeout(() => {
-              router.pushTab({ name: 'message' })
+              router.replaceAll({ name: 'home', params: { current: 'message' } })
             }, 100)
           } else {
             toast.warning(res.message)

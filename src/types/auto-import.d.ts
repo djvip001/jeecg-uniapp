@@ -78,6 +78,7 @@ declare global {
   const useCssModule: typeof import('vue')['useCssModule']
   const useCssVars: typeof import('vue')['useCssVars']
   const useGeoPosition: typeof import('../hooks/useGeoPosition')['default']
+  const useGeoSign: typeof import('../hooks/useGeoSign')['default']
   const useId: typeof import('vue')['useId']
   const useModel: typeof import('vue')['useModel']
   const usePageList: typeof import('../hooks/usePageList')['default']
@@ -174,6 +175,7 @@ declare module 'vue' {
     readonly useCssModule: UnwrapRef<typeof import('vue')['useCssModule']>
     readonly useCssVars: UnwrapRef<typeof import('vue')['useCssVars']>
     readonly useGeoPosition: UnwrapRef<typeof import('../hooks/useGeoPosition')['default']>
+    readonly useGeoSign: UnwrapRef<typeof import('../hooks/useGeoSign')['default']>
     readonly useId: UnwrapRef<typeof import('vue')['useId']>
     readonly useModel: UnwrapRef<typeof import('vue')['useModel']>
     readonly usePageList: UnwrapRef<typeof import('../hooks/usePageList')['default']>

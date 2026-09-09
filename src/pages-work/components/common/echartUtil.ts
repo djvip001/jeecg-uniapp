@@ -1038,8 +1038,10 @@ export function commonOption(option,config?){
         if(config?.markLineConfig?.show){
             if(isArray(config?.markLineConfig?.markLine) && config?.markLineConfig?.markLine.length>0){
                 data = config.markLineConfig.markLine.map(item=>{
-                    //设置临时组件名，便于区分双轴图
-                    item['compName'] = option?.tempCompName;
+                    // 设置临时组件名，便于区分双轴图
+                    // 注意：原先这里写过 item['compName'] = option?.tempCompName，
+                    // 但该值在后续 lineObj 中未被读取，且会写入 config.markLineConfig.markLine[i]，
+                    // 触发 useEchart.ts 的 deep watch → 死循环，已删除。
                     let markLineValue = getMarkLineValue(item,option.tempData);
                     let lineObj = {
                         yAxisType: item?.yAxis,
@@ -1193,45 +1195,56 @@ export function	handleTotalAndUnit(compName,chartOption,config,chartData){
  * @param {Object} chartData
  */
 export function disposeGridLayout(compName, chartOption, config, chartData) {
-    // 柱形图（JBar[基础柱形图]、JStackBar[堆叠柱形图]、JMultipleBar[多数据对比柱形图]、JNegativeBar[正负条形图]）
-    // 折线图 (JLine[基础折线图]、JMultipleLine[多数据对比折线图]、DoubleLineBar[双轴图])
-    // 散点图（JScatter[基础散点图]、JBubble[气泡图]）
-    chartOption.grid = {containLabel: true,top: 30,bottom: 60,left: 5,right: 5};
-    const {xAxis, yAxis, series} = chartOption
-    if(xAxis){
-        const {name, nameTextStyle = {}} = xAxis;
-        if(name){
-            chartOption.grid.top += 30;
-        }
-    };
-    if(yAxis){
-        const {name, nameTextStyle = {} } = yAxis;
-        if(name){
-            const {fontSize = 12} = nameTextStyle;
-            //15是轴到文字的距离
-            chartOption.grid.right += name.length * (fontSize + 1) + 15;
-        };
-    };
-    if(chartOption.title?.show){
-        // 【QQYUN-7911】标题和图表会重叠
-        // 有标题
-        const {textStyle = {} } = chartOption.title;
-        const { fontSize = 18 } = textStyle;
-        chartOption.grid.top += fontSize;
-        if(chartOption.grid.top > 200){
-            chartOption.grid.top = 30;
-        }
+  // 柱形图（JBar[基础柱形图]、JStackBar[堆叠柱形图]、JMultipleBar[多数据对比柱形图]、JNegativeBar[正负条形图]）
+  // 折线图 (JLine[基础折线图]、JMultipleLine[多数据对比折线图]、DoubleLineBar[双轴图])
+  // 散点图（JScatter[基础散点图]、JBubble[气泡图]）
+  console.log('disposeGridLayout compName', compName)
+  console.log('disposeGridLayout config', config)
+  chartOption.grid = config?.option?.grid || {
+    containLabel: true,
+    top: 30,
+    bottom: 50,
+    left: 5,
+    right: 60,
+  }
+  const { xAxis, yAxis, series } = chartOption
+  if (xAxis) {
+    const { name, nameTextStyle = {} } = xAxis
+    if (name) {
+      chartOption.grid.top += 30
     }
-    // series大于1说明有分组即有图例
-    if(series.length <=1){
-        chartOption.grid.bottom = 10;
-        // 【QQYUN-7911】安卓底部间距小
-        // #ifdef APP
-        chartOption.grid.bottom = 30;
-        // #endif
+  }
+  if (yAxis) {
+    const { name, nameTextStyle = {} } = yAxis
+    if (name) {
+      const { fontSize = 12 } = nameTextStyle
+      // 15是轴到文字的距离
+      chartOption.grid.right += name.length * (fontSize + 1) + 15
     }
-    console.log('---chartOption--',chartOption);
-    return chartOption;
+  }
+  if (chartOption.title?.show !== false) {
+    // 【QQYUN-7911】标题和图表会重叠
+    // 有标题
+    const { textStyle = {}, subtext, subtextStyle } = chartOption.title
+    const { fontSize = 18 } = textStyle
+    chartOption.grid.top += fontSize
+    if (subtext) {
+      chartOption.grid.top += subtextStyle?.fontSize || 12
+    }
+    if (chartOption.grid.top > 200) {
+      chartOption.grid.top = 30
+    }
+  }
+  // series大于1说明有分组即有图例
+  if (series.length <= 1) {
+    chartOption.grid.bottom = 10
+    // 【QQYUN-7911】安卓底部间距小
+    // #ifdef APP
+    chartOption.grid.bottom = 30
+    // #endif
+  }
+  console.log('---chartOption--', chartOption)
+  return chartOption
 }
 /**
  * 配置设置

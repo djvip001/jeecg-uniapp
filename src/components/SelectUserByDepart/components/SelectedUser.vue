@@ -27,7 +27,7 @@
       </template>
       <template v-else>
         <view class="empty-data">
-          <wd-status-tip image="content" tip="无选中用户" />
+          <wd-status-tip url-prefix="/static/wot-assets/" image="content" tip="无选中用户" />
         </view>
       </template>
     </view>

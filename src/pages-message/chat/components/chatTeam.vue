@@ -92,11 +92,13 @@ const getSelectdAllData = (data) => {
     .then((res: any) => {
       if (res.success) {
         emit('update:modelValue', [...props.modelValue, ...newAddUser])
+        toast.success(`${res.message}`)
       } else {
         emit('update:modelValue', [...props.modelValue])
         auto()
+        toast.warning(`${res.message}`)
       }
-      toast.warning(`${res.message}`)
+      
     })
     .catch((err) => {
       toast.warning('邀请用户失败~')

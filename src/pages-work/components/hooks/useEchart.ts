@@ -63,11 +63,16 @@ export default function useChartHook(props, initOption?, echarts?) {
     series: [{}] as any,
   }
   //监听配置修改
+  // 重入保护：组件自身渲染管线（initOption / handleTotalAndUnit 等）会通过 merge 创建与 config.option 的共享引用，
+  // 随后对 chartOption 的修改会反向污染 props.config.option，触发本 deep watch → 死循环。
+  // isQuerying 由 queryData 在请求开始时置位、响应处理完毕后通过 setTimeout 清位（macrotask，确保 watch 微任务先跑）。
+  let isQuerying = false
   watch(
     props.config,
     (config) => {
       if (!props?.isView) {
         console.log('=======props.config============')
+        if (isQuerying) return
         queryData()
       }
     },
@@ -82,6 +87,11 @@ export default function useChartHook(props, initOption?, echarts?) {
   function queryData(compConfig?, queryParams?) {
     let config = compConfig ? compConfig : { ...props.config };
     console.log("queryData*****>>>>>",queryParams)
+    // 置位重入保护：本函数所有响应链路（含 initOption 引起的 props.config 写入）完成前，
+    // 阻断 useEchart 中 props.config deep watch 的递归触发。
+    isQuerying = true
+    // 用 setTimeout(..., 0) 清旗（macrotask），保证 Vue reactive scheduler 排入的 watch 微任务先跑、被拦截。
+    const clearFlag = () => setTimeout(() => { isQuerying = false }, 0)
     if (config.dataType == 2) {
       //判断是否走代理
       if (config.dataSetId && config.dataSetType == 'api' && config.dataSetIzAgent !== '1') {
@@ -91,11 +101,12 @@ export default function useChartHook(props, initOption?, echarts?) {
         let linkParams = {}
         let params = Object.assign({}, dataMap, queryParams, linkParams)
         if (url.startsWith('#{api_base_path}') || url.startsWith('{{ domainURL }}')) {
-          getAgentData(params, config)
+          getAgentData(params, config, clearFlag)
         } else {
           let checkUrl = checkUrlPrefix(url)
           if (checkUrl.isDiffProtocol) {
             toast.warning('请求API地址需要https协议接口！')
+            clearFlag()
             return
           }
           console.log("api请求地址",url, params)
@@ -108,16 +119,18 @@ export default function useChartHook(props, initOption?, echarts?) {
               dataSource.value = res.result.records
             }
             getDataCallBack()
+            clearFlag()
           })
         }
       }else if (config.dataSetType == 'websocket'){
         //TODO websocket处理
+        clearFlag()
       }else {
         let { dataMap } = handleParam(config)
         //TODO 联动钻取处理
         let linkParams = {}
         let params = Object.assign({}, dataMap, queryParams, linkParams)
-        getAgentData(params,config);
+        getAgentData(params, config, clearFlag);
       }
     } else if (config.dataType == 4) {
       //查询配置
@@ -140,6 +153,7 @@ export default function useChartHook(props, initOption?, echarts?) {
             initOption && isFunction(initOption) && initOption()
           }
         }
+        clearFlag()
       })
     } else {
       //静态数据
@@ -151,6 +165,7 @@ export default function useChartHook(props, initOption?, echarts?) {
       }
       dataSource.value = chartData
       initOption && initOption(chartData)
+      clearFlag()
     }
   }
   /**
@@ -209,7 +224,7 @@ export default function useChartHook(props, initOption?, echarts?) {
    * 获取后端接口请求的数据
    * @param params
    */
-  function getAgentData(params, config) {
+  function getAgentData(params, config, clearFlag?) {
     http
       .post('/drag/onlDragDatasetHead/getAllChartData', {
         id: config.dataSetId,
@@ -223,12 +238,15 @@ export default function useChartHook(props, initOption?, echarts?) {
           dataSource.value = JSON.parse(JSON.stringify(data))
           //字典翻译
           dataSource.value = dictTransform(dataSource.value, result.dictOptions)
+          // TODO：原本此处写 config.dictOptions = result.dictOptions，会反向污染 props.config.dictOptions
+          // 触发 deep watch 递归。重入保护已能阻断递归，目前保留注释、暂不改。
           config.dictOptions = result.dictOptions
           getDataCallBack()
         } else {
           dataSource.value = []
           toast.warning('查询失败')
         }
+        clearFlag && clearFlag()
       })
   }
 

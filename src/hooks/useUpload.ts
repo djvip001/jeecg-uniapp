@@ -35,6 +35,7 @@ export default function useUpload<T = string>(
       fail: (err) => {
         console.error('uni.chooseMedia err->', err)
         error.value = true
+        loading.value = false
       },
     })
     // #endif
@@ -53,6 +54,7 @@ export default function useUpload<T = string>(
       fail: (err) => {
         console.error('uni.chooseImage err->', err)
         error.value = true
+        loading.value = false
       },
     })
     // #endif
@@ -62,6 +64,7 @@ export default function useUpload<T = string>(
 }
 
 function uploadFile<T>({ url, tempFilePath, formData, data, error, loading }) {
+  console.log('tempFilePath::', tempFilePath)
   const userStore = useUserStore()
   uni.uploadFile({
     url: url ?? VITE_UPLOAD_BASEURL,
@@ -73,6 +76,7 @@ function uploadFile<T>({ url, tempFilePath, formData, data, error, loading }) {
       'X-Tenant-Id': userStore.userInfo.tenantId,
     },
     success: (uploadFileRes) => {
+      console.log('uploadFileRes', uploadFileRes)
       data.value = JSON.parse(uploadFileRes.data)
     },
     fail: (err) => {

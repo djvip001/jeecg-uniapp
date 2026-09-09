@@ -14,6 +14,7 @@ export default function usePageList<T = string>(list,params={}) {
   const pageSize = ref(10)
   const pageTotal = ref(1)
   const dataList = ref([])
+  const extraParams = ref({})
   const queryParams = () => {
     return {
       pageNo: pageNo.value,
@@ -27,7 +28,7 @@ export default function usePageList<T = string>(list,params={}) {
   const queryList = (_pageNo, _pageSize) => {
     pageNo.value = _pageNo
     pageSize.value = _pageSize
-    let allParams = { ...queryParams(),...params };
+    const allParams = { ...queryParams(), ...params, ...extraParams.value }
     http
       .get(list, allParams)
       .then((res: any) => {
@@ -41,5 +42,5 @@ export default function usePageList<T = string>(list,params={}) {
         toast.error('加载数据失败~')
       })
   }
-  return { toast, router, paging,paramsStore, dataList, queryParams, queryList }
+  return { toast, router, paging,paramsStore, dataList, queryParams, queryList,extraParams }
 }

@@ -57,6 +57,9 @@ const initOption = (chartData) => {
     text.value = chartData;
   }
 };
+defineExpose({
+  queryData
+});
 </script>
 
 <style>

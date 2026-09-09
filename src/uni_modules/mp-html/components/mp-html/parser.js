@@ -868,24 +868,24 @@ Parser.prototype.popNode = function () {
       attrs.style += `;border:${border}px ${borderstyle || 'solid'} ${bordercolor || 'gray'}`
     }
     if (node.flag && node.c) {
-      // 有 colspan 或 rowspan 且含有链接的表格通过 grid 布局实现
+      // 有 colspan 或 rowspan 的表格通过 grid 布局实现
       styleObj.display = 'grid'
       if (styleObj['border-collapse'] === 'collapse') {
         styleObj['border-collapse'] = undefined
-        spacing = 0
       }
-      if (spacing) {
-        styleObj['grid-gap'] = spacing + 'px'
-        styleObj.padding = spacing + 'px'
-      } else if (border) {
-        // 无间隔的情况下避免边框重叠
-        attrs.style += ';border-left:0;border-top:0'
-      }
+      const borderWidth = border || 1
+      const borderColor = bordercolor || styleObj['border-color'] || '#ccc'
+      const borderStyle = borderstyle || 'solid'
+      const cellBorderVal = borderWidth + 'px ' + borderStyle + ' ' + borderColor
+      // 表格容器不画边框，所有边框由单元格自己负责
+      styleObj.border = 'none'
 
       const width = [] // 表格的列宽
       const trList = [] // tr 列表
       const cells = [] // 保存新的单元格
       const map = {}; // 被合并单元格占用的格子
+      const occupied = {} // 所有被占用的格子
+      let totalCols = 0;
 
       (function traversal (nodes) {
         for (let i = 0; i < nodes.length; i++) {
@@ -923,6 +923,7 @@ Parser.prototype.popNode = function () {
             while (map[row + '.' + col]) {
               col++
             }
+            const startCol = col
             let style = td.attrs.style || ''
             let start = style.indexOf('width') ? style.indexOf(';width') : 0
             // 提取出 td 的宽度
@@ -959,28 +960,26 @@ Parser.prototype.popNode = function () {
                 style += ';justify-content: right'
               }
             }
-            style = (border ? `;border:${border}px ${borderstyle || 'solid'} ${bordercolor || 'gray'}` + (spacing ? '' : ';border-right:0;border-bottom:0') : '') + (padding ? `;padding:${padding}px` : '') + ';' + style
-            // 处理列合并
-            if (td.attrs.colspan) {
-              style += `;grid-column-start:${col};grid-column-end:${col + parseInt(td.attrs.colspan)}`
-              if (!td.attrs.rowspan) {
-                style += `;grid-row-start:${row};grid-row-end:${row + 1}`
-              }
-              col += parseInt(td.attrs.colspan) - 1
+            style = (padding ? `;padding:${padding}px` : '') + ';' + style
+            // 计算当前单元格的列跨度和行跨度
+            const colSpan = parseInt(td.attrs.colspan) || 1
+            const rowSpan = parseInt(td.attrs.rowspan) || 1
+            // 所有单元格都设置显式 grid 定位
+            style += `;grid-column-start:${col};grid-column-end:${col + colSpan};grid-row-start:${row};grid-row-end:${row + rowSpan}`
+            if (colSpan > 1) {
+              col += colSpan - 1
             }
-            // 处理行合并
-            if (td.attrs.rowspan) {
-              style += `;grid-row-start:${row};grid-row-end:${row + parseInt(td.attrs.rowspan)}`
-              if (!td.attrs.colspan) {
-                style += `;grid-column-start:${col};grid-column-end:${col + 1}`
-              }
-              // 记录下方单元格被占用
-              for (let rowspan = 1; rowspan < td.attrs.rowspan; rowspan++) {
-                for (let colspan = 0; colspan < (td.attrs.colspan || 1); colspan++) {
-                  map[(row + rowspan) + '.' + (col - colspan)] = 1
+            // 记录所有被占用的格子，同时保存单元格的边界信息用于后处理
+            for (let rs = 0; rs < rowSpan; rs++) {
+              for (let cs = 0; cs < colSpan; cs++) {
+                occupied[(row + rs) + '.' + (startCol + cs)] = 1
+                if (rs > 0) {
+                  map[(row + rs) + '.' + (startCol + cs)] = 1
                 }
               }
             }
+            td._colEnd = startCol + colSpan
+            td._rowEnd = row + rowSpan
             if (style) {
               td.attrs.style = style
             }
@@ -989,12 +988,44 @@ Parser.prototype.popNode = function () {
           }
         }
         if (row === 1) {
+          totalCols = col - 1
           let temp = ''
-          for (let i = 1; i < col; i++) {
+          for (let i = 1; i <= totalCols; i++) {
             temp += (width[i] ? width[i] : 'auto') + ' '
           }
           styleObj['grid-template-columns'] = temp
         }
+      }
+      const totalRows = trList.length
+      // 为空位填充占位单元格
+      for (let r = 1; r <= totalRows; r++) {
+        for (let c = 1; c <= totalCols; c++) {
+          if (!occupied[r + '.' + c]) {
+            const placeholder = {
+              name: 'td',
+              attrs: {
+                class: '',
+                style: 'display:flex;grid-column-start:' + c + ';grid-column-end:' + (c + 1) + ';grid-row-start:' + r + ';grid-row-end:' + (r + 1)
+              },
+              children: [],
+              _colEnd: c + 1,
+              _rowEnd: r + 1
+            }
+            cells.push(placeholder)
+          }
+        }
+      }
+      // 后处理：为每个单元格设置边框（个别属性放末尾覆盖 tag-style）
+      // 所有单元格都有 left + top 边框；右边缘单元格额外加 right；底边缘单元格额外加 bottom
+      for (let i = 0; i < cells.length; i++) {
+        const cell = cells[i]
+        const atRight = cell._colEnd > totalCols
+        const atBottom = cell._rowEnd > totalRows
+        cell.attrs.style += ';border-left:' + cellBorderVal + ';border-top:' + cellBorderVal +
+          ';border-right:' + (atRight ? cellBorderVal : '0') +
+          ';border-bottom:' + (atBottom ? cellBorderVal : '0')
+        delete cell._colEnd
+        delete cell._rowEnd
       }
       node.children = cells
     } else {
@@ -1056,6 +1087,7 @@ Parser.prototype.popNode = function () {
         this.stack[i].flag = 1 // 指示含有合并单元格
       }
     }
+    this.expose() // 确保表格及祖先元素暴露，以激活 grid 布局渲染合并单元格
   } else if (node.name === 'ruby') {
     // 转换 ruby
     node.name = 'span'

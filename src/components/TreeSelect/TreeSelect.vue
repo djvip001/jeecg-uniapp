@@ -9,7 +9,7 @@
       ></wd-input>
       <view v-if="!!showText && !$attrs.disabled" class="u-iconfont u-icon-close" @click.stop="handleClear"></view>
     </view>
-    <wd-popup position="bottom" v-model="popupShow">
+    <wd-popup position="bottom" v-model="popupShow"  @close="cancel">
       <view class="content">
         <view class="operation">
           <view class="cancel text-gray-5" @click.stop="cancel">取消</view>
@@ -36,11 +36,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, useAttrs } from 'vue'
+import { ref, watch, useAttrs, inject } from 'vue'
 import { useToast, useMessage, useNotify, dayjs } from 'wot-design-uni'
 import { http } from '@/utils/http'
 import DaTree from '@/uni_modules/da-tree/index.vue'
-import { isArray } from '@/utils/is'
+import { isArray, isNullOrUnDef } from '@/utils/is'
 defineOptions({
   name: 'TreeSelect',
   options: {
@@ -109,14 +109,21 @@ const text = ref<any>('')
 const code = ref<any>('')
 const attrs = useAttrs()
 const defaultCheckedKeys: any = ref(props.multiple ? [] : '')
-
+// 流程底部按钮显示状态
+const isOperationVisible = inject('isOperationVisible', null)
 const handleClick = () => {
   if (!attrs.disabled) {
     popupShow.value = true
+    if (!isNullOrUnDef(isOperationVisible)) {
+      isOperationVisible.value = false
+    }
   }
 }
 const cancel = () => {
   popupShow.value = false
+  if (!isNullOrUnDef(isOperationVisible)) {
+    isOperationVisible.value = true
+  }
 }
 const confirm = () => {
   const titles = treeValue.value.map((item) => item.title)
@@ -125,6 +132,9 @@ const confirm = () => {
   popupShow.value = false
   emit('update:modelValue', keys)
   emit('change', keys)
+  if (!isNullOrUnDef(isOperationVisible)) {
+    isOperationVisible.value = true
+  }
 }
 const handleTreeChange = (value, record) => {
   const { originItem, checkedStatus } = record
@@ -374,7 +384,7 @@ validateProp().then(() => {
     position: absolute;
     right: 15px;
     top: calc(14px + 4px);
-    color: #585858;
+    color: var(--wot-input-clear-color);
     font-size: 15px;
   }
   &.clear {

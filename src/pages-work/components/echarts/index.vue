@@ -19,6 +19,7 @@ import {isNumber,isString,isNullOrUnDef,isArray} from '@/utils/is'
 import {cache} from "@/common/uitls";
 import { useUserStore } from '@/store/user'
 import { merge } from 'lodash-es';
+import {deepClone} from "wot-design-uni/components/common/util";
 // 引入组件props
 const props = defineProps({
 	option: {
@@ -68,7 +69,7 @@ let reloadDrillStatus = inject<any>('reloadDrillStatus');
 const lastDrillParams = ref({});
 //获取用户信息
 const userStore = useUserStore();
-let dragData = inject('dragData');
+let dragData:any = inject('dragData');
 // 监听option的变化
 watchEffect(()=>{
 	props.option && init(props.option)
@@ -94,16 +95,28 @@ function init(finalOption){
         if (finalOption?.xAxis) {
           defaultVal['xAxis'] = {
             axisLabel: {
-              color: '#9d9c9c'
+              color: '#000'
             }
           };
         }
         if (finalOption?.yAxis) {
           defaultVal['yAxis'] = {
             axisLabel: {
-              color: '#9d9c9c'
+              color: '#000'
             }
           };
+        }
+        if (finalOption?.title) {
+          defaultVal['title'] = {
+            subtextStyle: {color: '#000'},
+            textStyle: {color: '#000'}
+          }
+        }
+        if (finalOption?.series) {
+          defaultVal['series'] = deepClone(finalOption?.series)
+          defaultVal['series'].forEach((item) => {
+            item.label = { color: '#000' }
+          })
         }
         finalOption = merge(finalOption, defaultVal);
         console.log("finalOption",finalOption)
@@ -130,7 +143,7 @@ function init(finalOption){
       //绑定点击事件
       bindClick(myChart);
       // #endif
-		},300)
+		},800)
 	}
 }
 /**

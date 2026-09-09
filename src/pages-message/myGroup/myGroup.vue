@@ -61,9 +61,11 @@
                   ></wd-img>
                 </template>
                 <template #title>
-                  <view class="content text-gray-4">
-                    <text>{{ inItem.groupName }}</text>
-                    <text>{{ inItem.orgCodeTxt ?? '暂无' }}</text>
+                  <view class="content">
+                    <text class="group-name">{{ inItem.groupName }}</text>
+                    <text v-if="inItem.membersNumber != null" class="member-count">
+                      {{ inItem.membersNumber }}人
+                    </text>
                   </view>
                 </template>
               </wd-cell>
@@ -366,14 +368,16 @@ onBeforeUnmount(() => {
 .content {
   display: flex;
   flex-direction: column;
-  uni-text {
-    &:first-child {
-      font-size: 16px;
-      color: #8799a3;
-    }
-    &:last-child {
-      font-size: 12px;
-    }
+  gap: 4px;
+  .group-name {
+    font-size: 16px;
+    color: #333;
+    line-height: 22px;
+  }
+  .member-count {
+    font-size: 12px;
+    color: #999;
+    line-height: 17px;
   }
 }
 .wraper {

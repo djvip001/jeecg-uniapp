@@ -1,0 +1,70 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "/Users/liaozhiyang/Library/Application Support/HBuilder X/extensions/launcher/agc-certs/1752143272442.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B14A09CCFCBCDF116C85E497D448D9D9066AA0D5B0C7A313BE86FFBBC8A60C3F16E4DA79C0F9D84",
+          "profile": "/Users/liaozhiyang/Library/Application Support/HBuilder X/extensions/launcher/agc-certs/1752143272442.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "/Users/liaozhiyang/Library/Application Support/HBuilder X/extensions/launcher/agc-certs/1752143272442.p12",
+          "storePassword": "0000001B14A09CCFCBCDF116C85E497D448D9D9066AA0D5B0C7A313BE86FFBBC8A60C3F16E4DA79C0F9D84"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "compatibleSdkVersion": "5.0.2(14)",
+        "compatibleSdkVersionStage": "beta6",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      },
+      {
+        "name": "release",
+        "signingConfig": "release",
+        "compatibleSdkVersion": "5.0.2(14)",
+        "compatibleSdkVersionStage": "beta6",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug"
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default",
+            "release"
+          ]
+        }
+      ]
+    }
+  ]
+}

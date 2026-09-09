@@ -35,7 +35,7 @@
         </wd-table-col>
       </template>
     </wd-table>
-    <wd-status-tip v-if="dataList.length == 0" image="content" tip="暂无内容" />
+    <wd-status-tip url-prefix="/static/wot-assets/" v-if="dataList.length == 0" image="content" tip="暂无内容" />
     <wd-pagination
       v-model="pageNo"
       :total="pageTotal"

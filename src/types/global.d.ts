@@ -1,6 +1,7 @@
 declare const __UNI_PLATFORM__:
   | 'h5'
   | 'app'
+  | 'app-harmony'
   | 'mp-alipay'
   | 'mp-baidu'
   | 'mp-jd'

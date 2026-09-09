@@ -13,17 +13,17 @@ let createUpload = (file, url, key='file', header = {},data = {}) => {
 	`);
 	if (!url) {return;}
 	tis.style.display = 'flex';
-	
+
 	let formData = new FormData();
-		formData.append(key, file);
-	
+	formData.append(key, file);
+
 	for (let keys in data) {
 		formData.append(keys, data[keys]);
 	}
-	
+
 	let xhr = new XMLHttpRequest();
 	xhr.open("POST", url, true);
-	
+
 	for (let keys in header) {
 		xhr.setRequestHeader(keys, header[keys]);
 	}
@@ -34,7 +34,7 @@ let createUpload = (file, url, key='file', header = {},data = {}) => {
 			progress.innerText = `努力上传中..${percent}`;
 		}
 	}, false);
-	
+
 	xhr.ontimeout = function(){
 		// xhr请求超时事件处理
 		progress.innerText = '请求超时';
@@ -43,9 +43,9 @@ let createUpload = (file, url, key='file', header = {},data = {}) => {
 			plus.webview.currentWebview().close();
 		},1000);
 	};
-	
+
 	xhr.onreadystatechange = (ev) => {
-		
+
 		if(xhr.readyState == 4) {
 			console.log('status：'+xhr.status);
 			if (xhr.status == 200) {
@@ -56,16 +56,16 @@ let createUpload = (file, url, key='file', header = {},data = {}) => {
 			else {
 				progress.innerText = '大小超出10MB限制, 请压缩或降低质量';
 			}
-			
+
 			setTimeout(()=>{
 				tis.style.display = 'none';
 				plus.webview.currentWebview().close();
 			},1000);
-			
+
 		}
 	};
 	xhr.send(formData);
-	
+
 	cancel.addEventListener("click", ()=>{
 		xhr.abort();
 		plus.webview.currentWebview().close();
@@ -78,13 +78,32 @@ mask.addEventListener("click", () => {
 });
 
 document.addEventListener('UniAppJSBridgeReady', () => {
-	let {url,key,header,formData} = plus.webview.currentWebview();
+	let {url,key,header,formData, confirmFileName, sendModalTitle, sendModalBtnText, fileNameKey} = plus.webview.currentWebview();
 	fileDom.addEventListener('change', (event) => {
 		let file = fileDom.files[0];
 		if(file.size > (1024*1024 * 10)) {
 			plus.nativeUI.toast('单个文件请勿超过10M,请重新上传');
 			return;
 		}
+    // update-begin-author:liaozhiyang date:2025-11-18 for:【JHHB-1056】聊天显示文件及发送文件
+		if (confirmFileName) {
+        // 显示文件名输入弹窗
+        const dialog = new FileNameDialog({
+          sendModalTitle: sendModalTitle || '发送文件',
+          sendModalBtnText: sendModalBtnText || '立即发送',
+          onConfirm: (newFileName) => {
+            formData[fileNameKey] = newFileName
+            createUpload(file, url, key, header, formData)
+          },
+          onCancel: () => {
+            // 取消时重置文件输入
+            fileDom.value = ''
+          },
+        })
+        dialog.show(file.name, file.size)
+        return
+		}
+    // update-end-author:liaozhiyang date:2025-11-18 for:【JHHB-1056】聊天显示文件及发送文件
 		createUpload(file, url, key,header,formData);
 	}, false);
 });

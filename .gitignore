@@ -1,6 +1,10 @@
 node_modules
 dist
 .cache
+src/manifest.json
+src/pages.json
+src/types/uni-app.d.ts
+pnpm-lock.yaml
 
 ## ide
 **/.idea
@@ -10,6 +14,7 @@ dist
 **/target
 **/logs
 **/dist
+
 
 ## front
 /yarn-error.log

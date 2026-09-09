@@ -30,8 +30,16 @@ export const echartProps = {
         type: Boolean,
         default: false
     },
+	isView:{
+	    type: Boolean,
+	    default: true
+	},
     appId:{
         type: String,
         default: ''
+    },
+    izBigScreen:{
+        type: Boolean,
+        default: false
     }
 }

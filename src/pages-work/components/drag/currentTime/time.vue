@@ -27,6 +27,10 @@
     isLowApp: {
       type: Boolean,
       default: false,
+    },
+    izBigScreen: {
+      type: Boolean,
+      default: false,
     }
   });
   //定时
@@ -92,7 +96,7 @@
    */
   const getTextStyle = computed(() => {
     let fontSize = props.config.option.body?.fontSize || props.fontSize;
-    let color = props.config.option.body?.color || '#000000';
+    let color =  props.izBigScreen? '#000000' : props.config.option.body?.color || '#000000';
     let fontWeight = props.config.option.body?.fontWeight || 'normal';
     let textAlign = props.config.option.body?.textAlign || 'center';
     let marginLeft = props.config.option.body?.marginLeft || 0;

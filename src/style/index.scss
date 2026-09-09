@@ -81,9 +81,13 @@ page {
   --wot-textarea-color: #555;
 
   // 重置 wot-design-uni
-  --wot-input-disabled-color: #bab8b8;
-  --wot-picker-column-disabled-color: #bab8b8;
+  --wot-input-disabled-color: #888;
+  --wot-picker-column-disabled-color: #888;
+  --wot-input-placeholder-color: #888;
   --wot-input-clear-color: #8f8f8f;
+  --wot-cell-clear-color: #8f8f8f;
+  --wot-textarea-clear-color: #8f8f8f;
+  --wot-radio-label-fs: 15px;
   .wd-button {
     &.is-round {
       border-radius: 4px !important;
@@ -112,6 +116,21 @@ page {
       }
     }
   }
+  .wd-textarea {
+    &.is-cell {
+      --wot-textarea-fs: 15px;
+    }
+  }
+  .wd-cell__title {
+    --wot-cell-title-fs: 15px;
+  }
+  .wd-select-picker {
+    --wot-cell-title-fs: 15px;
+    .wd-radio.is-cell-radio {
+      padding-left: 35px;
+      padding-right: 35px;
+    }
+  }
   // 万年历组件
   .uni-calendar {
     .uni-calendar__header {
@@ -134,6 +153,9 @@ page {
       }
     }
   }
+}
+.uni-simple-toast__text {
+  font-size: 15px;
 }
 .uni-scroll-view {
   .uni-scroll-view {

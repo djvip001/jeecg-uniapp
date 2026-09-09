@@ -1,5 +1,5 @@
 <template>
-  <view class="content">
+  <view class="content" :style="{height:izDrill?'calc(100% - 10px)':'100%'}">
     <statusTip v-if="pageTips.show" :status="pageTips.status"></statusTip>
     <!-- #ifdef  H5 -->
     <EchartsMap v-else v-model:option="option" v-model:map="mapObject" v-model:echartId="echartId" />
@@ -407,13 +407,13 @@ export default {
       const dom = document.getElementById(this.echartId || 'total-bar-echart');
 
       if (!dom) {
-        console.error("热力地图 DOM 元素未找到！");
+        console.error("主题排名 DOM 元素未找到！");
         return;
       }
 
-     if (this.mapData.code) {
+     if (this.mapData && this.mapData.code && this.totalBarEchart) {
       // 2. 初始化 ECharts
-       this.myChart = echarts.init(dom);
+       this.myChart = this.totalBarEchart.init(dom);
 		  // 3. 注册地图数据（如果有）
        this.totalBarEchart.registerMap(this.mapData.code, this.mapData.data);
      }

@@ -49,11 +49,15 @@ export default function useChartHook(props, initOption, echarts?) {
     series: [{}] as any,
   }
   //监听配置修改
+  // 重入保护：与 useEchart.ts 同源问题，组件渲染管线自身可能修改 props.config（或其嵌套对象）。
+  // isQuerying 由 queryData 在请求开始时置位、响应处理完毕后通过 setTimeout 清位，阻断死循环。
+  let isQuerying = false
   watch(
     props.config,
     (config) => {
       if (!props?.isView) {
         console.log('=======props.config============')
+        if (isQuerying) return
         queryData()
       }
     },
@@ -95,7 +99,10 @@ export default function useChartHook(props, initOption, echarts?) {
    */
   function queryData(compConfig?, queryParams?) {
     let config = compConfig ? compConfig : { ...props.config }
+    isQuerying = true
+    const clearFlag = () => setTimeout(() => { isQuerying = false }, 0)
     if (config.dataType == 2) {
+      clearFlag()
     } else if (config.dataType == 4) {
       //查询配置
       let params = getParams(config, queryParams)
@@ -117,6 +124,7 @@ export default function useChartHook(props, initOption, echarts?) {
             initOption && isFunction(initOption) && initOption()
           }
         }
+        clearFlag()
       })
     } else {
       //静态数据
@@ -128,6 +136,7 @@ export default function useChartHook(props, initOption, echarts?) {
       }
       dataSource.value = chartData
       initOption && initOption(chartData)
+      clearFlag()
     }
   }
 

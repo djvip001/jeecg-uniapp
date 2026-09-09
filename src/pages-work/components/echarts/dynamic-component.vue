@@ -50,7 +50,7 @@
     <JCalendar :compName="compName" :id="i"  :config="config" v-else-if="comp.indexOf('JCalendar')>=0"></JCalendar>
     <JCurrentTime :compName="compName" :id="i"  :config="config" v-else-if="comp.indexOf('JCurrentTime')>=0"></JCurrentTime>
     <JList :compName="compName" :id="i"  :config="config" v-else-if="comp.indexOf('JList')>=0"></JList>
-    <JRadioButton :compName="compName" :id="i"  :config="config" v-else-if="comp.indexOf('JRadioButton')>=0"></JRadioButton>
+    <JRadioButton :compName="compName" :id="i"  :config="config" v-else-if="comp.indexOf('JRadioButton')>=0" @compRouter="btnClick"></JRadioButton>
     <JCommonTable :compName="compName" :id="i"  :config="config" v-else-if="comp.indexOf('JCommonTable')>=0"></JCommonTable>
     <JQuickNav :compName="compName" :id="i"  :config="config" v-else-if="comp.indexOf('JQuickNav')>=0"></JQuickNav>
   </view>
@@ -129,4 +129,17 @@ const comp = computed(() => {
   console.log('组件数据：config:', props.config)
   return props.compName
 })
+
+async function btnClick(href) {
+  uni.setClipboardData({
+  	data: href,
+  	success: function () {
+  	    uni.showToast({
+  		  title: '链接已复制,请使用外部浏览器打开!',
+  		  icon: 'success',
+  		  duration: 2000
+  		})
+  	}
+  });
+}
 </script>

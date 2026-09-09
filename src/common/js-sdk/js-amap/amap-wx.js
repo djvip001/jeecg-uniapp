@@ -10,14 +10,14 @@ function AMapWX(a) {
     })
 }
 ;(AMapWX.prototype.getWxLocation = function (a, b) {
-  wx.getLocation({
+  uni.getLocation({
     type: 'gcj02',
     success: function (a) {
       var c = a.longitude + ',' + a.latitude
-      wx.setStorage({ key: 'userLocation', data: c }), b(c)
+      uni.setStorage({ key: 'userLocation', data: c }), b(c)
     },
     fail: function (c) {
-      wx.getStorage({
+      uni.getStorage({
         key: 'userLocation',
         success: function (a) {
           a.data && b(a.data)
@@ -30,7 +30,7 @@ function AMapWX(a) {
   (AMapWX.prototype.getRegeo = function (a) {
     function c(c) {
       var d = b.requestConfig
-      wx.request({
+      uni.request({
         url: 'https://restapi.amap.com/v3/geocode/regeo',
         data: {
           key: b.key,
@@ -90,17 +90,19 @@ function AMapWX(a) {
       })
     }
     var b = this
-    a.location
-      ? c(a.location)
-      : b.getWxLocation(a, function (a) {
-          c(a)
-        })
+    if (a.location) {
+      c(a.location)
+    } else {
+      b.getWxLocation(a, function (a) {
+        c(a)
+      })
+    }
   }),
   (AMapWX.prototype.getWeather = function (a) {
     function d(d) {
       var e = 'base'
       a.type && 'forecast' == a.type && (e = 'all'),
-        wx.request({
+        uni.request({
           url: 'https://restapi.amap.com/v3/weather/weatherInfo',
           data: {
             key: b.key,
@@ -142,7 +144,7 @@ function AMapWX(a) {
         })
     }
     function e(e) {
-      wx.request({
+      uni.request({
         url: 'https://restapi.amap.com/v3/geocode/regeo',
         data: {
           key: b.key,
@@ -192,7 +194,7 @@ function AMapWX(a) {
       }
       a.querytypes && (e['types'] = a.querytypes),
         a.querykeywords && (e['keywords'] = a.querykeywords),
-        wx.request({
+        uni.request({
           url: 'https://restapi.amap.com/v3/place/around',
           data: e,
           method: 'GET',
@@ -276,7 +278,7 @@ function AMapWX(a) {
       a.type && (d['type'] = a.type),
       a.city && (d['city'] = a.city),
       a.citylimit && (d['citylimit'] = a.citylimit),
-      wx.request({
+      uni.request({
         url: 'https://restapi.amap.com/v3/assistant/inputtips',
         data: d,
         method: 'GET',
@@ -306,7 +308,7 @@ function AMapWX(a) {
       a.waypoints && (d['waypoints'] = a.waypoints),
       a.avoidpolygons && (d['avoidpolygons'] = a.avoidpolygons),
       a.avoidroad && (d['avoidroad'] = a.avoidroad),
-      wx.request({
+      uni.request({
         url: 'https://restapi.amap.com/v3/direction/driving',
         data: d,
         method: 'GET',
@@ -335,7 +337,7 @@ function AMapWX(a) {
       }
     a.origin && (d['origin'] = a.origin),
       a.destination && (d['destination'] = a.destination),
-      wx.request({
+      uni.request({
         url: 'https://restapi.amap.com/v3/direction/walking',
         data: d,
         method: 'GET',
@@ -364,7 +366,7 @@ function AMapWX(a) {
       a.strategy && (d['strategy'] = a.strategy),
       a.city && (d['city'] = a.city),
       a.cityd && (d['cityd'] = a.cityd),
-      wx.request({
+      uni.request({
         url: 'https://restapi.amap.com/v3/direction/transit/integrated',
         data: d,
         method: 'GET',
@@ -397,7 +399,7 @@ function AMapWX(a) {
       }
     a.origin && (d['origin'] = a.origin),
       a.destination && (d['destination'] = a.destination),
-      wx.request({
+      uni.request({
         url: 'https://restapi.amap.com/v4/direction/bicycling',
         data: d,
         method: 'GET',

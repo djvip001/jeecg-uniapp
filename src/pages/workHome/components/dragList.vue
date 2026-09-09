@@ -5,7 +5,7 @@
 		  <view class="li-img" @click="handleGo(item)" :style="[{backgroundColor: item?.backgroundColor?item.backgroundColor : getRandomColor()}]">
 		    <wd-icon name="chart" size="22px" />
 		  </view>
-		  <view class="li-text">{{ item.name }}</view>
+		  <view class="li-text">{{ getShortTitle(item.name) }}</view>
 	  </wd-col>
 	</wd-row>
   </z-paging>
@@ -14,7 +14,7 @@
 
 <script setup lang="ts">
 import { http } from '@/utils/http'
-import { useToast, useMessage, useNotify, dayjs } from 'wot-design-uni'
+import { useToast } from 'wot-design-uni/components/wd-toast'
 import { useRouter } from '@/plugin/uni-mini-router'
 import { getRandomColor } from '@/common/uitls'
 import { useParamsStore } from '@/store/page-params'
@@ -59,6 +59,13 @@ const handleGo = (item) => {
 	  url: '/pages-work/dragPage/index?id=' + item.id,
 	})
 }
+// 获取短标题
+const getShortTitle = (title) => {
+  if (title.length > 4) {
+    return title.substring(0, 4)
+  }
+   return title
+}
 </script>
 
 <style lang="scss" scoped>
@@ -96,7 +103,6 @@ const handleGo = (item) => {
 				width: 120upx; /* 设置元素宽度 */
 				white-space: nowrap; /* 禁止文本换行 */
 				overflow: hidden; /* 隐藏超出部分 */
-				text-overflow: ellipsis; /* 超出部分显示为省略号 */
 		}
 	}
 }

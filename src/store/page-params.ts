@@ -17,6 +17,7 @@ export const useParamsStore = defineStore(
       delete params.value[key]
     }
     const reset = () => {
+      uni.removeStorageSync('home:current')
       params.value = {}
     }
     return {

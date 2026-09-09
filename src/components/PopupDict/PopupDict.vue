@@ -2,14 +2,18 @@
   <view class="PopupDict">
     <view class="inputArea" :class="{ clear: !!showText }" @click.stop="handleClick">
       <wd-select-picker
+        v-bind="$attrs"
         v-model="showText"
         :columns="options"
         readonly
         :type="multi ? 'checkbox' : 'radio'"
         @click="handleClick"
-        v-bind="$attrs"
       ></wd-select-picker>
-      <view v-if="!!showText && !disabled" class="u-iconfont u-icon-close" @click.stop="handleClear"></view>
+      <view
+        v-if="hasValue && !disabled"
+        class="u-iconfont u-icon-close"
+        @click.stop="handleClear"
+      ></view>
     </view>
     <popupReportModal
       v-if="reportModal.show"
@@ -23,12 +27,14 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from 'vue'
+import { ref, watch, inject, computed } from 'vue'
 import { useToast, useMessage, useNotify, dayjs } from 'wot-design-uni'
 import { http } from '@/utils/http'
+import { isNullOrUnDef } from '@/utils/is'
 import popupReportModal from '@/components/Popup/components/popupReportModal.vue'
 defineOptions({
   name: 'PopupDict',
+  inheritAttrs: false,
   options: {
     styleIsolation: 'shared',
   },
@@ -57,10 +63,18 @@ const props = defineProps({
     required: false,
   },
 })
-const emit = defineEmits(['change', 'update:modelValue'])
-
+const emit = defineEmits(['change', 'update:modelValue', 'selected'])
+// 流程底部按钮显示状态
+const isOperationVisible = inject('isOperationVisible', null)
 const toast = useToast()
 const showText = ref<any>(props.multi ? [] : '')
+const hasValue = computed(() => {
+  const val = showText.value
+  if (props.multi) {
+    return Array.isArray(val) && val.length > 0
+  }
+  return val !== '' && val != null
+})
 const options = ref<any>([])
 const cgRpConfigId = ref('')
 const code = ref(props.dictCode.split(',')[0])
@@ -109,9 +123,12 @@ watch(
   (val) => {
     let result
     if (props.multi) {
-      result = val.join(',')
+      result = Array.isArray(val) ? val.join(props.spliter) : ''
     } else {
-      result = val
+      result = val ?? ''
+    }
+    if (result === (props.modelValue ?? '')) {
+      return
     }
     nextTick(() => {
       emit('change', result)
@@ -173,6 +190,7 @@ function callBack(rows) {
     result = dataValue[0]
   }
   nextTick(() => {
+    emit('selected', rows)
     emit('change', result)
     emit('update:modelValue', result)
   })
@@ -181,7 +199,8 @@ function callBack(rows) {
 // 清空
 const handleClear = () => {
   if (!props.disabled) {
-    showText.value = ''
+    showText.value = props.multi ? [] : ''
+    options.value = []
     handleChange([])
   }
 }
@@ -189,10 +208,16 @@ const handleClear = () => {
 const handleClick = () => {
   if (!props.disabled) {
     reportModal.show = true
+    if (!isNullOrUnDef(isOperationVisible)) {
+      isOperationVisible.value = false
+    }
   }
 }
 const handleClose = () => {
   reportModal.show = false
+  if (!isNullOrUnDef(isOperationVisible)) {
+    isOperationVisible.value = true
+  }
 }
 const handleChange = (data) => {
   console.log('选中的值：', data)
@@ -207,7 +232,7 @@ const handleChange = (data) => {
     position: absolute;
     right: 15px;
     top: calc(14px + 4px);
-    color: #585858;
+    color: var(--wot-input-clear-color);
     font-size: 15px;
   }
   &.clear {

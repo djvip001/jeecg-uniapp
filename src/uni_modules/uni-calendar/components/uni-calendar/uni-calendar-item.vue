@@ -9,7 +9,7 @@
 		}"
 	 @click="choiceDate(weeks)">
 		<view class="uni-calendar-item__weeks-box-item">
-			<text v-if="selected&&weeks.extraInfo" class="uni-calendar-item__weeks-box-circle"></text>
+			<text v-if="selected&&weeks.extraInfo" class="uni-calendar-item__weeks-box-circle"  :style="{backgroundColor: weeks.extraInfo.color}"></text>
 			<text class="uni-calendar-item__weeks-box-text" :class="{
 				'uni-calendar-item--isDay-text': weeks.isDay,
 				'uni-calendar-item--isDay':calendar.fullDate === weeks.fullDate && weeks.isDay,
@@ -45,7 +45,7 @@
 				'uni-calendar-item--multiple': weeks.multiple,
 				'uni-calendar-item--after-checked':weeks.afterMultiple,
 				'uni-calendar-item--disable':weeks.disable,
-				}">{{weeks.extraInfo.info}}</text>
+				}"  :style="{color: weeks.extraInfo.color}">{{weeks.extraInfo.info}}</text>
 		</view>
 	</view>
 </template>
@@ -136,11 +136,11 @@
 
 	.uni-calendar-item__weeks-box-circle {
 		position: absolute;
-		top: 5px;
-		right: 5px;
-		width: 8px;
-		height: 8px;
-		border-radius: 8px;
+		top: 8px;
+		right: 8px;
+		width: 4px;
+		height: 4px;
+		border-radius: 4px;
 		background-color: $uni-color-error;
 
 	}

@@ -35,7 +35,7 @@
           </view>
         </wd-index-bar>
         <template v-else>
-          <wd-status-tip image="content" tip="暂无内容" />
+          <wd-status-tip url-prefix="/static/wot-assets/" image="content" tip="暂无内容" />
         </template>
       </view>
     </z-paging>

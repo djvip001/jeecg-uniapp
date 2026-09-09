@@ -1,5 +1,5 @@
 <template>
-  <view class="content">
+  <view class="content" :style="{height:izDrill?'calc(100% - 10px)':'100%'}">
     <statusTip v-if="pageTips.show" :status="pageTips.status"></statusTip>
     <!-- #ifdef  H5 -->
     <EchartsMap v-else v-model:option="option" v-model:map="mapObject" v-model:echartId="echartId" />
@@ -397,9 +397,9 @@ export default {
         return;
       }
 
-     if (this.mapData.code) {
+     if (this.mapData && this.mapData.code && this.totalFlyEchart) {
       // 2. 初始化 ECharts
-       this.myChart = echarts.init(dom);
+       this.myChart = this.totalFlyEchart.init(dom);
 		// 3. 注册地图数据（如果有）
        this.totalFlyEchart.registerMap(this.mapData.code, this.mapData.data);
 	   // 4. 设置图表配置

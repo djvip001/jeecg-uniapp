@@ -12,12 +12,14 @@ const initState = {
   phone: '',
   email: '',
   sex: 1,
-  birthday:'',
-  loginTenantId:0,
+  mainDepPostId: '',
+  birthday: '',
+  loginTenantId: 0,
   // 本地存储时间
   localStorageTime: 0,
   // 组织编码名称
   orgCodeTxt: '',
+  homePath: '/index',
 }
 
 export const useUserStore = defineStore(
@@ -25,8 +27,8 @@ export const useUserStore = defineStore(
   () => {
     const userInfo = ref<IUserInfo>({ ...initState })
     const setUserInfo = (val: IUserInfo) => {
-      if(val?.loginTenantId){
-        val.tenantId = val.loginTenantId;
+      if (val?.loginTenantId) {
+        val.tenantId = val.loginTenantId
       }
       userInfo.value = val
     }
@@ -40,10 +42,10 @@ export const useUserStore = defineStore(
       userInfo.value = { ...userInfo.value, ...options }
     }
     const setTenant = (tenantId) => {
-      userInfo.value.tenantId = tenantId;
+      userInfo.value.tenantId = tenantId
     }
     const getTenant = () => {
-      return userInfo.value.tenantId;
+      return userInfo.value.tenantId
     }
     // 一般没有reset需求，不需要的可以删除
     const reset = () => {

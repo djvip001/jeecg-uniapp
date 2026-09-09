@@ -1,5 +1,5 @@
 <template>
-  <view class="content">
+  <view class="content" :style="{height:izDrill?'calc(100% - 10px)':'100%'}">
     <statusTip v-if="pageTips.show" :status="pageTips.status"></statusTip>
 	  <echartsUniapp v-else :option="option" :chartData="dataSource" :config="config" :id="id" ></echartsUniapp>
   </view>
@@ -83,6 +83,6 @@ defineExpose({
 </script>
 <style scoped>
 .content {
-  padding: 10px;
+  padding: 14px;
 }
 </style>

@@ -6,9 +6,9 @@
           <uni-grid-item :class="cardClass">
             <view class="card-div">
               <view class="card-icon">
-                <img :src="item.icon" :style="getImgStyle" v-if="item.icon?.indexOf('http') > -1 || item.icon?.indexOf('data:image') > -1" />
+                <img :src="getImg(item.icon)" :style="getImgStyle" />
               </view>
-              <text>{{ item.title }}</text>
+              <view>{{ item.title }}</view>
             </view>
           </uni-grid-item>
         </template>
@@ -18,16 +18,18 @@
 </template>
 
 <script lang="ts" name="JQuickNav" setup>
-import { computed, onMounted } from 'vue';
-import useChartHook from "@/pages-work/components/hooks/useEchart";
+import { computed, onMounted } from 'vue'
+import useChartHook from '@/pages-work/components/hooks/useEchart'
 import UniSection from '@/uni_modules/uni-section/components/uni-section/uni-section.vue'
 import UniGrid from '@/uni_modules/uni-grid/components/uni-grid/uni-grid.vue'
 import UniGridItem from '@/uni_modules/uni-grid/components/uni-grid-item/uni-grid-item.vue'
+import { getFileAccessHttpUrl } from '@/common/uitls'
 
 const props = defineProps({
   size: {
     type: Object,
-    default: () => {},
+    default: () => {
+    },
   },
   textAlign: {
     type: String,
@@ -67,7 +69,7 @@ const emit = defineEmits(['compRouter']);
 //card配置
 const cardOption = props.config?.option?.card || {};
 //初始化配置
-let [{ dataSource, reload, pageTips, config }, { queryData }] = useChartHook(props, initOption);
+let [{dataSource, reload, pageTips, config}, {queryData}] = useChartHook(props, initOption);
 /**
  * icon样式
  */
@@ -76,8 +78,25 @@ const getIconStyle = computed(() => {
   return {
     lineHeight: 'normal',
     fontSize: `${fontSize}px`,
-  };
-});
+  }
+})
+/**
+ * icon
+ */
+const getImg = (src) => {
+  const map = {
+    'icon-jeecg-shijian': '/pages-work/static/iconfont/time.png',
+    'icon-jeecg-homepage': '/pages-work/static/iconfont/homepage.png',
+    'icon-jeecg-dangan': '/pages-work/static/iconfont/dangan.png',
+    'icon-jeecg-shezhi': '/pages-work/static/iconfont/shezhi.png',
+    'icon-jeecg-yuechi': '/pages-work/static/iconfont/yuechi.png',
+    'icon-jeecg-fujin': '/pages-work/static/iconfont/fujin.png',
+  }
+  if (map[src]) {
+    return map[src]
+  }
+  return getFileAccessHttpUrl(src)
+}
 
 /**
  * 图标样式
@@ -86,10 +105,9 @@ const getImgStyle = computed(() => {
   let fontSize = config.option.icon?.fontSize || props.fontSize;
   return {
     width: `${fontSize}px`,
-    marginLeft: '-20px',
     height: `${fontSize}px`,
-  };
-});
+  }
+})
 
 //计算图标位置 top或者left
 const cardClass = computed(() => {
@@ -104,12 +122,14 @@ const cardClass = computed(() => {
   return cls;
 });
 
-function initOption(){
-
-}
+function initOption() {}
 
 onMounted(() => {
   queryData(config);
+});
+
+defineExpose({
+  queryData
 });
 </script>
 
@@ -120,10 +140,10 @@ onMounted(() => {
     min-height: 80px;
     margin: 0 auto;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-
     .card-icon {
       text-align: center;
     }
@@ -158,7 +178,8 @@ onMounted(() => {
     text-align: right;
   }
 }
-.ant-card{
+
+.ant-card {
   background: transparent;
 }
 </style>

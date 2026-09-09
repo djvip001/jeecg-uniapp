@@ -15,7 +15,7 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from '@/plugin/uni-mini-router'
-import { useToast } from 'wot-design-uni'
+import { useToast } from 'wot-design-uni/components/wd-toast'
 import { ACCESS_TOKEN, APP_ROUTE, APP_CONFIG, HOME_PAGE, HOME_CONFIG_EXPIRED_TIME} from '@/common/constants'
 import { useUserStore } from '@/store/user'
 import { useParamsStore } from '@/store/page-params'
@@ -192,7 +192,7 @@ const goRedirectUrl = () => {
 const appConfig = () => {
   if(isLocalConfig){
     toast.success('登录成功!')
-    router.pushTab({ path: HOME_PAGE })
+    router.replaceAll({ path: HOME_PAGE })
   }else{
     http.get('/eoa/sysAppConfig/queryAppConfigRoute').then((res: any) => {
       if (res.success) {
@@ -202,7 +202,7 @@ const appConfig = () => {
         if (redirectUrl.value) {
           goRedirectUrl()
         } else {
-          router.pushTab({ path: HOME_PAGE })
+          router.replaceAll({ path: HOME_PAGE })
         }
       }
     })
@@ -238,7 +238,7 @@ const sysOAuth2Login = (source) => {
 function toOldAuthLogin() {
   let token = userStore.userInfo.token
   if (token) {
-    router.pushTab({ path: HOME_PAGE })
+    router.replaceAll({ path: HOME_PAGE })
   } else {
     sysOAuth2Login('dingtalk')
   }

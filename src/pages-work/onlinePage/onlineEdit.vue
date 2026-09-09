@@ -26,18 +26,42 @@
         @success="handleSuccess"
         @back="backRoute"
       ></online-loader>
+      <!-- 悬浮按钮显示（知会/关注）-->
+      <wd-fab
+        v-if="fabShow"
+        type="primary"
+        custom-class="fab-button"
+        position="right-center"
+        direction="top"
+      >
+        <wd-button custom-class="custom-button" type="success" @click="handleNotify">
+          <wd-icon name="notification" style="font-size: 18px"></wd-icon>
+        </wd-button>
+        <wd-button custom-class="custom-button" type="info" @click="handleStar">
+          <wd-icon v-if="star" name="star-filled" style="color: #ffc107; font-size: 18px"></wd-icon>
+          <wd-icon v-else name="star" style="font-size: 18px"></wd-icon>
+        </wd-button>
+      </wd-fab>
+<!--      <NotifyListModal-->
+<!--        ref="notifyListRef"-->
+<!--        notifyType="form"-->
+<!--        :formData="formData"-->
+<!--        @selected="fabShow = true"-->
+<!--      ></NotifyListModal>-->
     </scroll-view>
   </PageLayout>
 </template>
 
 <script lang="ts" setup>
-import OnlineLoader from '@/components/online/online-loader.vue'
+import OnlineLoader from '@/pages-work/components/online/online-loader.vue'
 import router from '@/router'
 import { onLoad } from '@dcloudio/uni-app'
 import { http } from '@/utils/http'
 import { useToast } from 'wot-design-uni'
 import { isMp, isH5 } from '@/utils/platform'
-import {getRefPromise} from "@/utils";
+import { getRefPromise } from '@/utils'
+// import NotifyListModal from '@/pages-super/flow/components/NotifyListModal.vue'
+import { ref } from 'vue'
 defineOptions({
   name: 'onlineEdit',
   options: {
@@ -55,7 +79,15 @@ const flow_code_pre = ref('onl_')
 const flowEdit = ref(false)
 const edit = ref(true)
 const reload = ref(true)
-
+// 悬浮按钮显示
+const fabShow = ref(true)
+// 流程表单配置
+const formConfig: any = ref({})
+// 知会列表实例
+const notifyListRef = ref()
+const formData = ref({})
+// 是否关注
+const star = ref(false)
 // 引用组件
 const onlineEdit = ref(null)
 // 定义 initForm 方法
@@ -75,6 +107,23 @@ const initForm = (item) => {
     dataId.value = item.dataId
     console.log('onlineEdit.value', onlineEdit.value)
     console.log('onlineEdit.value', onlineEdit.value)
+    formConfig.value = { ...item }
+    fabShow.value = formConfig.value.fabShow === 'true'
+    formData.value = {
+      notifyType: 'form',
+      formDataId: formConfig.value?.dataId,
+      formType: getFormType(formConfig.value?.formType),
+      formTableName: formConfig.value?.desformCode,
+      tableName: formConfig.value?.desformCode,
+      processName: formConfig.value?.desformName,
+      nodeName: '流程发起',
+      vars: {
+        BPM_FORM_TYPE: '1',
+        BPM_DATA_ID: formConfig.value?.dataId,
+        desform_name: formConfig.value?.desformName,
+        BPM_DES_FORM_CODE: formConfig.value?.desformCode,
+      },
+    }
     let delay = 0
     if (isH5 === false) {
       // 小程序端需要延时下，否则不显示
@@ -137,13 +186,77 @@ const handleSuccess = (id) => {
     backRoute()
   }
 }
-
+/**
+ * 关注审批
+ */
+function handleStar() {
+  http
+    .post('/act/process/focusOn/focusOnSet', {
+      formDataId: formConfig.value.dataId,
+      dataId: formConfig.value.id,
+      beginNode: 'start',
+      status: star.value ? '0' : '1',
+      formType: getFormType(formConfig.value.formType),
+    })
+    .then((res: any) => {
+      if (res.success) {
+        toast.success(res.message)
+        star.value = !star.value
+      }
+    })
+}
+// 获取表单类型
+function getFormType(value) {
+  if (value === '2') {
+    return 'design'
+  } else if (value === '1') {
+    return 'online'
+  } else {
+    return 'dev'
+  }
+}
+/**
+ * 知会配置
+ */
+function handleNotify() {
+  fabShow.value = false
+  notifyListRef.value.handleOpen()
+}
+// 关注状态查询
+function initStar(data) {
+  http
+    .get('/act/process/focusOn/getFocusOnProcess', { formDataId: data.dataId })
+    .then((res: any) => {
+      if (res.success) {
+        star.value = !!res?.result
+      }
+    })
+}
 // onLoad 生命周期钩子
 onLoad((option) => {
   initForm(option)
+  // 初始化关注
+  initStar(option)
 })
 </script>
 
 <style lang="scss" scoped>
-//
+.wd-fab {
+  :deep(.wd-button.is-round) {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 100% !important;
+  }
+  :deep(.wd-fab__icon) {
+    font-size: 15px !important;
+  }
+  :deep(.custom-button) {
+    min-width: auto !important;
+    box-sizing: border-box;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 16px !important;
+    margin: 8rpx;
+  }
+}
 </style>

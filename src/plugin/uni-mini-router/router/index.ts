@@ -20,7 +20,7 @@ import {
   NextRouteLocationRaw,
   Route,
   RouteLocationRaw,
-  Router
+  Router,
 } from '../interfaces'
 
 import { beautifyUrl, getUrlParams, queryStringify, setUrlParams } from '../utils'
@@ -31,7 +31,7 @@ const navMethods: Record<string, Function> = {
   redirectTo: uni.redirectTo,
   reLaunch: uni.reLaunch,
   switchTab: uni.switchTab,
-  navigateBack: uni.navigateBack
+  navigateBack: uni.navigateBack,
 }
 
 /**
@@ -42,25 +42,60 @@ const navMethods: Record<string, Function> = {
  * @returns
  */
 export function navjump(to: RouteLocationRaw, router: Router, navType: NAVTYPE) {
-  const url: string = getRoutePath(to, router)
-  switch (navType) {
-    case 'push':
-      navMethods.navigateTo({ url: url })
-      break
-    case 'replace':
-      navMethods.redirectTo({ url: url })
-      break
-    case 'pushTab':
-      navMethods.switchTab({ url: url })
-      break
-    case 'replaceAll':
-      navMethods.reLaunch({ url: url })
-      break
-    default:
-      throw new Error('无效的路由类型，请确保提供正确的路由类型')
-    // throw new Error('Invalid route type provided. Please ensure the provided route is of the correct type.')
-  }
-  return
+  // update-begin--author:liaozhiyang---date:20250917---for：【JHHB-551】指定路由返回报错，兜底返回上一层
+  return new Promise((resolve, reject) => {
+    const url: string = getRoutePath(to, router)
+    switch (navType) {
+      case 'push':
+        navMethods.navigateTo({
+          url: url,
+          success: () => resolve(true),
+          fail: () => {
+            console.error('无效的路由类型，请确保提供正确的路由类型')
+            reject(new Error('无效的路由类型，请确保提供正确的路由类型'))
+          },
+        })
+        break
+      case 'replace':
+        navMethods.redirectTo({
+          url: url,
+          success: () => resolve(true),
+          fail: () => {
+            console.error('无效的路由类型，请确保提供正确的路由类型')
+            reject(new Error('无效的路由类型，请确保提供正确的路由类型'))
+          },
+        })
+        break
+      case 'pushTab':
+        navMethods.switchTab({
+          url: url,
+          success: () => resolve(true),
+          fail: () => {
+            console.error('无效的路由类型，请确保提供正确的路由类型')
+            // update-begin-author:liaozhiyang date:2025-10-29 for:【JHHB-922】同意审批提交后停留这个页面了(去掉tabBar之后导致的)
+            // 项目中没有tabbar页面，所有调用pushTab时，失败的都调用navigateBack
+            uni.navigateBack()
+            // update-end-author:liaozhiyang date:2025-10-29 for:【JHHB-922】同意审批提交后停留这个页面了(去掉tabBar之后导致的)
+            // reject(new Error('无效的路由类型，请确保提供正确的路由类型'))
+          },
+        })
+        break
+      case 'replaceAll':
+        navMethods.reLaunch({
+          url: url,
+          success: () => resolve(true),
+          fail: () => {
+            console.error('无效的路由类型，请确保提供正确的路由类型')
+            reject(new Error('无效的路由类型，请确保提供正确的路由类型'))
+          },
+        })
+        break
+      default:
+        console.error('无效的路由类型，请确保提供正确的路由类型')
+      // throw new Error('Invalid route type provided. Please ensure the provided route is of the correct type.')
+    }
+  })
+  // update-end--author:liaozhiyang---date:20250917---for：【JHHB-551】指定路由返回报错，兜底返回上一层
 }
 
 /**
@@ -149,7 +184,7 @@ export function getRouteByPath(path: string, router: Router): Route {
   const route: Route = router.routes.find((route: Route) => {
     return route.path === path || route.aliasPath === path
   })
-  return JSON.parse(JSON.stringify(route))
+  return route ? JSON.parse(JSON.stringify(route)) : route
 }
 
 /**
@@ -158,7 +193,11 @@ export function getRouteByPath(path: string, router: Router): Route {
  * @param hookType 钩子类型
  * @param userGuard 守卫
  */
-export function registerEachHooks(router: Router, hookType: HookType, userGuard: BeforeEachGuard | AfterEachGuard) {
+export function registerEachHooks(
+  router: Router,
+  hookType: HookType,
+  userGuard: BeforeEachGuard | AfterEachGuard,
+) {
   router.guardHooks[hookType] = [userGuard as any]
 }
 // 保留uni默认的NavMethod
@@ -167,7 +206,7 @@ const oldMethods: Record<string, Function> = {
   redirectTo: uni.redirectTo,
   reLaunch: uni.reLaunch,
   switchTab: uni.switchTab,
-  navigateBack: uni.navigateBack
+  navigateBack: uni.navigateBack,
 }
 
 /**
@@ -217,7 +256,9 @@ export function rewriteNavMethod(router: Router) {
  */
 export function guardToPromiseFn(guard: BeforeEachGuard, to: Route, from: Route) {
   return new Promise<NextRouteLocationRaw | true>((reslove, reject) => {
-    const next: ((rule?: NextRouteLocationRaw | boolean) => void) | any = (rule?: NextRouteLocationRaw | boolean) => {
+    const next: ((rule?: NextRouteLocationRaw | boolean) => void) | any = (
+      rule?: NextRouteLocationRaw | boolean,
+    ) => {
       next._called = true
       if (rule === false) {
         reject({})

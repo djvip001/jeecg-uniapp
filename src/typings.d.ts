@@ -3,9 +3,8 @@
 declare global {
   type IResData<T> = {
     code: number
-    success: boolean
+    msg: string
     message: string
-    result: T
     data: T
   }
 
@@ -31,11 +30,12 @@ declare global {
     phone?: string
     email?: string
     birthday?: string
-    orgCode?: string
     /** 微信的 openid，非微信没有这个字段 */
     openid?: string
     // 存到本地的时间戳
     localStorageTime: number
+    homePath?: string
+    mainDepPostId?: string
   }
 }
 

@@ -73,7 +73,7 @@ const handleClick = (item) => {
   let auth = [...options]
   if (props.pageType == 'discussion') {
     // 聊天只有 移出俩天
-    auth = [{ key: 'delete', label: '移出俩天' }]
+    auth = [{ key: 'delete', label: '移出聊天' }]
   } else {
     // 群组
     auth = [...options]

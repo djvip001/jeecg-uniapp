@@ -538,6 +538,11 @@ export default {
   vertical-align: super;
 }
 
+._table {
+  display: table;
+  width: 100%;
+}
+
 ._thead,
 ._tbody,
 ._tfoot {

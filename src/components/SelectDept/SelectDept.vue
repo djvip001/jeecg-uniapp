@@ -1,47 +1,60 @@
 <template>
   <view class="CategorySelect">
     <view class="pickerArea" :class="{ clear: !!showText }" @click.stop="handleClick">
-      <wd-input
-        :placeholder="getPlaceholder($attrs)"
-        v-bind="$attrs"
-        v-model="showText"
-        clearable
-        readonly
-      ></wd-input>
-      <view v-if="!!showText  && !disabled" class="u-iconfont u-icon-close" @click.stop="handleClear"></view>
-    </view>
-    <wd-popup v-if="popupShow" position="bottom" v-model="popupShow">
-      <view class="content">
-        <view class="operation">
-          <view class="cancel text-gray-5" @click.stop="cancel">取消</view>
-          <view class="confrim" @click.stop="confirm">确定</view>
-        </view>
-        <scroll-view class="flex-1" scroll-y>
-          <DaTree
-            :data="treeData"
-            :labelField="labelKey"
-            :valueField="rowKey"
-            loadMode
-            :showCheckbox="multiple"
-            :showRadioIcon="false"
-            :checkStrictly="true"
-            :defaultCheckedKeys="defaultCheckedKeys"
-            :loadApi="asyncLoadTreeData"
-            @change="handleTreeChange"
-          ></DaTree>
-        </scroll-view>
+      <!-- 当isCustomRenderTag为true且multiple为true时，使用自定义滑动标签容器 -->
+      <view class="textarea-box" v-if="isCustomRenderTag && multiple">
+        <wd-textarea
+          :placeholder="getPlaceholder($attrs)"
+          v-bind="$attrs"
+          v-model="showText"
+          :disabled="disabled"
+          clearable
+          readonly
+        ></wd-textarea>
+        <view
+          v-if="!!showText && !disabled"
+          class="u-iconfont u-icon-close"
+          @click.stop="handleClear"
+        ></view>
       </view>
-    </wd-popup>
+      <!-- 其他情况使用原来的wd-input -->
+      <template v-else>
+        <wd-input
+          :placeholder="getPlaceholder($attrs)"
+          v-bind="$attrs"
+          v-model="showText"
+          :disabled="disabled"
+          clearable
+          readonly
+        ></wd-input>
+        <view
+          v-if="!!showText && !disabled"
+          class="u-iconfont u-icon-close"
+          @click.stop="handleClear"
+        ></view>
+      </template>
+    </view>
+    <SelectDeptModal
+      v-if="popupShow"
+      v-model="selectedData"
+      :multiple="multiple"
+      :rowKey="rowKey"
+      :labelKey="labelKey"
+      :isCustomRenderTag="isCustomRenderTag"
+      @close="handleClose"
+      @change="handleChange"
+    ></SelectDeptModal>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, useAttrs } from 'vue'
+import { ref, watch, useAttrs, inject } from 'vue'
 import { useToast, useMessage, useNotify, dayjs } from 'wot-design-uni'
 import { http } from '@/utils/http'
-import DaTree from '@/uni_modules/da-tree/index.vue'
-import { isArray } from '@/utils/is'
+import { isArray, isNullOrUnDef } from '@/utils/is'
 import { getPlaceholder } from '@/common/uitls'
+import SelectDeptModal from './components/SelectDeptModal.vue'
+
 defineOptions({
   name: 'SelectDept',
 })
@@ -67,141 +80,98 @@ const props = defineProps({
     required: false,
     default: false,
   },
+  // 是否显示全路径部门名称（取这个props名是为了和pc保持一致）
+  isCustomRenderTag: {
+    type: Boolean,
+    default: true,
+  },
+  // 是否表单渲染（默认是true）
+  izFormReader: {
+    type: Boolean,
+    default: true,
+  },
 })
 const emit = defineEmits(['change', 'update:modelValue'])
+// 流程底部按钮显示状态
+const isOperationVisible = inject('isOperationVisible', null)
 const toast = useToast()
 const api = {
   loadDictItem: '/sys/category/loadDictItem/',
   queryDepartTreeSync: '/sys/sysDepart/queryDepartTreeSync',
+  // 根据id查询部门(显示全路径)
+  getDepartPathNameByOrgCode: '/sys/sysDepart/getDepartPathNameByOrgCode',
 }
 const showText = ref('')
 const popupShow = ref(false)
-const treeData = ref<any[]>([])
-const treeValue = ref([])
-const defaultCheckedKeys: any = ref(props.multiple ? [] : '')
+const selectedData = ref<any[]>([])
 const handleClick = () => {
   if (!props.disabled) {
     popupShow.value = true
+    if (!isNullOrUnDef(isOperationVisible) && props.izFormReader) {
+      isOperationVisible.value = false
+    }
   }
 }
-const cancel = () => {
+const handleClose = () => {
   popupShow.value = false
-}
-const confirm = () => {
-  const titles = treeValue.value.map((item) => item.title)
-  const keys = treeValue.value.map((item) => item.key).join(',')
-  showText.value = titles.join(',')
-  popupShow.value = false
-  emit('update:modelValue', keys)
-  emit('change', keys)
-}
-
-const handleTreeChange = (value, record) => {
-  const { originItem, checkedStatus } = record
-  if (checkedStatus) {
-    // 选中
-    if (props.multiple) {
-      treeValue.value.push({ key: originItem[props.rowKey], title: originItem[props.labelKey] })
-    } else {
-      treeValue.value = [{ key: originItem[props.rowKey], title: originItem[props.labelKey] }]
-    }
-  } else {
-    // 取消
-    if (props.multiple) {
-      const findIndex = treeValue.value.findIndex(
-        (item) => item[props.rowKey] == originItem[props.rowKey],
-      )
-      if (findIndex != -1) {
-        treeValue.value.splice(findIndex, 1)
-      }
-    } else {
-      treeValue.value = []
-    }
+  if (!isNullOrUnDef(isOperationVisible)) {
+    isOperationVisible.value = true
   }
-}
-const transformField = (result) => {
-  for (let i of result) {
-    i.value = i.key
-    if (i.isLeaf == false) {
-      i.leaf = false
-    } else if (i.isLeaf == true) {
-      i.leaf = true
-    }
-  }
-}
-// 异步加载
-const asyncLoadTreeData = ({ originItem }) => {
-  return new Promise<void>((resolve) => {
-    let param = {
-      pid: originItem.key,
-      primaryKey: props.rowKey,
-    }
-    http
-      .get(api.queryDepartTreeSync, param)
-      .then((res: any) => {
-        if (res.success) {
-          const { result } = res
-          transformField(result)
-          resolve(result)
-        } else {
-          resolve(null)
-        }
-      })
-      .catch((err) => resolve(null))
-  })
-}
-// 加载根节点
-function loadRoot() {
-  let param = {
-    primaryKey: props.rowKey,
-  }
-  http
-    .get(api.queryDepartTreeSync, param)
-    .then((res: any) => {
-      if (res.success) {
-        const { result } = res
-        if (result && result.length > 0) {
-          transformField(result)
-          treeData.value = result
-        }
-      } else {
-        console.error('部门组件加载根节点数据失败~')
-      }
-    })
-    .catch((err) => {
-      console.error('部门组件加载根节点数据失败~')
-    })
 }
 // 翻译input内的值
 function loadItemByCode() {
   let value = props.modelValue
-  if(value){
+  if (value) {
     console.log('部门组件翻译props.modelValue', props.modelValue)
     if (isArray(props.modelValue)) {
       // @ts-ignore
       value = value.join(',')
     }
-    if (value === treeData.value.map((item) => item.key).join(',')) {
+    if (value === selectedData.value.map((item) => item.id).join(',')) {
       // 说明是刚选完，内部已有翻译。不需要再请求
+      if (props.isCustomRenderTag) {
+        showText.value = selectedData.value
+          .map((item) => item.fillPath ?? item[props.labelKey])
+          .join(',')
+      } else {
+        showText.value = selectedData.value.map((item) => item[props.labelKey]).join(',')
+      }
       return
     }
     value = (value as string).trim()
     if (value) {
-      http
+      if (props.isCustomRenderTag) {
+        showText.value = ''
+        selectedData.value = []
+        value.split(',').forEach((item) => {
+          http
+            .get(api.getDepartPathNameByOrgCode, { orgCode: '', depId: item })
+            .then((res: any) => {
+              if (res.success) {
+                const { result = '' }: any = res
+                if (showText.value.length) {
+                  showText.value += ',' + result
+                } else {
+                  showText.value += result
+                }
+                selectedData.value.push({ id: item, fillPath: result })
+              }
+            })
+            .catch((err) => {})
+        })
+      } else {
+        http
           .get(api.queryDepartTreeSync, { ids: value })
           .then((res: any) => {
             if (res.success) {
               const { result = [] } = res
               showText.value = result.map((item) => item[props.labelKey]).join(',')
-              if (props.multiple) {
-                defaultCheckedKeys.value = typeof value === 'string' ? value.split(',') : [value]
-              } else {
-                defaultCheckedKeys.value = value
-              }
+              selectedData.value = result
             } else {
             }
           })
           .catch((err) => {})
+      }
     }
   }
 }
@@ -209,10 +179,16 @@ function loadItemByCode() {
 // 清空
 const handleClear = () => {
   showText.value = ''
-  treeValue.value = []
-  confirm()
+  selectedData.value = []
+  emit('update:modelValue', '')
+  emit('change', '')
 }
-
+const handleChange = (value) => {
+  selectedData.value = value
+  emit('update:modelValue', value.map((item) => item.id).join(','))
+  emit('change', value.map((item) => item.id).join(','))
+  popupShow.value = false
+}
 watch(
   () => props.modelValue,
   () => {
@@ -220,7 +196,6 @@ watch(
   },
   { deep: true, immediate: true },
 )
-loadRoot()
 </script>
 
 <style lang="scss" scoped>
@@ -273,12 +248,20 @@ loadRoot()
     position: absolute;
     right: 15px;
     top: calc(14px + 4px);
-    color: #585858;
+    color: var(--wot-input-clear-color);
     font-size: 15px;
+    z-index: 10;
   }
   &.clear {
     :deep(.wd-input__body) {
       padding-right: 20px;
+    }
+  }
+  .textarea-box {
+    position: relative;
+    :deep(uni-textarea) {
+      height: 72px;
+      width: calc(100% - 20px);
     }
   }
 }

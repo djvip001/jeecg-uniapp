@@ -13,14 +13,19 @@
 </route>
 
 <template>
-  <PageLayout navTitle="联系人" backRouteName="message" routeMethod="pushTab">
+  <PageLayout
+    navTitle="联系人"
+    backRouteName="message"
+    routeMethod="pushTab"
+    :isShowNavRightTextMp="false"
+  >
     <view class="wrap">
       <z-paging
         ref="paging"
         :fixed="false"
         v-model="dataList"
         @query="queryList"
-        :default-page-size="100"
+        :default-page-size="10000"
       >
         <template #top>
           <wd-search
@@ -67,6 +72,7 @@
     </view>
     <template #navRight>
       <view
+        v-if="conditionFilter.options.length > 1"
         class="cuIcon-filter font-size-20px color-white"
         @click="() => (conditionFilter.show = true)"
       ></view>
@@ -90,7 +96,7 @@ import { useToast, useMessage, useNotify, dayjs } from 'wot-design-uni'
 import { useRouter } from '@/plugin/uni-mini-router'
 import { cache, getFileAccessHttpUrl, hasRoute } from '@/common/uitls'
 import vPinyin from '../common/vue-py'
-import rightConditionFilter from '@/components/RightConditionFilter/RightConditionFilter.vue'
+import rightConditionFilter from '@/pages-message/contacts/components/rightConditionFilter.vue'
 import { TENANT_LIST } from '@/common/constants'
 import defaultAvatar from '@/static/default-avatar.png'
 
@@ -193,7 +199,7 @@ const handleResult = (arr) => {
     let { id, realname, avatar, username, phone, email, post, orgCodeTxt } = item
     //聊天通讯录把自己过滤掉
     if (username !== userStore.userInfo.username) {
-      let pinYin = realname
+      let pinYin = realname ?? '未知'
       if (realname) {
         //TODO 判断汉字的位置
         if (/.*[\u4e00-\u9fa5]+.*$/.test(realname)) {
@@ -278,6 +284,7 @@ onLoad(() => {
   overflow: hidden;
   margin-right: 10px;
   background-color: #eee;
+  flex: none;
 }
 .content {
   display: flex;
@@ -289,6 +296,12 @@ onLoad(() => {
     }
     &:last-child {
       font-size: 12px;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      word-break: break-all;
     }
   }
 }

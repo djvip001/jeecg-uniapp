@@ -28,7 +28,7 @@
 </template>
 
 <script lang="ts" setup>
-import OnlineLoader from '@/components/online/online-loader.vue'
+import OnlineLoader from '@/pages-work/components/online/online-loader.vue'
 import router from '@/router'
 import { http } from '@/utils/http'
 import { useToast } from 'wot-design-uni'
@@ -83,7 +83,7 @@ const startProcess = (id) => {
 
 // 定义 handleSuccess 方法
 const handleSuccess = (id) => {
-  if (backRouteName.value === 'paper') {
+  if (backRouteName.value === 'paper' || backRouteName.value === 'index') {
     uni.showModal({
       title: '提示',
       content: '确认提交流程吗?',

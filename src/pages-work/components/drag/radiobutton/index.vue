@@ -1,6 +1,6 @@
 <template>
   <div class="button-container" :style="getButtonStyle">
-    <wd-button v-for="(item, index) in dataSource" :key="index" @click.stop="btnClick(item)" class="item-btn button" :style="getBtnDynamicStyle(index)">
+    <wd-button v-for="(item, index) in dataSource" :key="index" @tap="btnClick(item)" class="item-btn button" :style="getBtnDynamicStyle(index)">
       <span class="overflow_ellipsis" :style="getBtnTextStyle(index)">{{ getSimpText(item.title) }}</span>
     </wd-button>
   </div>
@@ -53,6 +53,7 @@ const getButtonStyle = computed(() => {
   let marginLeft = config.option.body?.marginLeft || '0px';
   let marginTop = config.option.body?.marginTop || '0px';
   return {
+    height: config.size.height + 'px',
     backgroundColor:'inherit',
     marginLeft: `${marginLeft}px`,
     marginTop: `${marginTop}px`,
@@ -78,6 +79,21 @@ async function btnClick(item) {
         // #ifdef H5
         window.open(href, '_blank');
         // #endif
+
+		// #ifdef MP-WEIXIN
+		emit('compRouter', href);
+	   // #endif
+
+		uni.setClipboardData({
+			data: href,
+			success: function () {
+			    uni.showToast({
+				  title: '链接已复制,请使用外部浏览器打开!',
+				  icon: 'success',
+				  duration: 2000
+				})
+			}
+		});
       } else {
         emit('compRouter', href, item);
       }
@@ -89,8 +105,8 @@ async function btnClick(item) {
         url: props.config.actionConfig.url,
         records: { ...item },
       };
-      let res = await pushSocketMsg(params);
-      console.log('pushSocketMsg', res);
+      //let res = await pushSocketMsg(params);
+      //console.log('pushSocketMsg', res);
     }
   }
 }

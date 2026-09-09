@@ -2,6 +2,7 @@
   <view class="DateTime">
     <view class="inputArea" :class="{ clear: !!showText }" @click="handleClick">
       <wd-input
+        :disabled="disabled"
         :placeholder="getPlaceholder($attrs)"
         v-bind="$attrs"
         readonly
@@ -9,7 +10,7 @@
       ></wd-input>
       <view v-if="!!showText && !disabled" class="u-iconfont u-icon-close" @click.stop="handleClear"></view>
     </view>
-    <wd-popup v-if="popupShow" position="bottom" v-model="popupShow">
+    <wd-popup v-if="popupShow" position="bottom" v-model="popupShow" @close="handleClose">
       <view class="content">
         <view class="operation">
           <view class="cancel text-gray-5" @click.stop="cancel">取消</view>
@@ -57,7 +58,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, inject } from 'vue'
+import { isString, isNullOrUnDef } from '@/utils/is'
 import { useToast } from 'wot-design-uni'
 import dayjs from 'dayjs'
 import { getPlaceholder } from '@/common/uitls'
@@ -98,7 +100,8 @@ const props = defineProps({
 
 const emit = defineEmits(['change', 'update:modelValue'])
 const toast = useToast()
-
+// 流程底部按钮显示状态
+const isOperationVisible = inject('isOperationVisible', null)
 // 显示控制
 const showYear = computed(() => props.format.includes('YYYY'))
 const showMonth = computed(() => props.format.includes('MM'))
@@ -117,7 +120,12 @@ const seconds = ref<number[]>([])
 
 // 当前选中的值
 const pickerValue = ref<number[]>([])
-const showText = computed(() => props.modelValue)
+const showText = computed(() => {
+  if (!props.modelValue || !showYear.value) return props.modelValue
+
+  const dateTime = dayjs(props.modelValue)
+  return dateTime.isValid() ? dateTime.format(props.format) : props.modelValue
+})
 const popupShow = ref(false)
 
 // 初始化数据
@@ -276,17 +284,32 @@ const confirm = () => {
   const output = selectedDate.format(props.format)
   emit('update:modelValue', output)
   emit('change', output)
+  if (!isNullOrUnDef(isOperationVisible)) {
+    isOperationVisible.value = true
+  }
 }
 
 // 点击取消
 const cancel = () => {
   popupShow.value = false
+  if (!isNullOrUnDef(isOperationVisible)) {
+    isOperationVisible.value = true
+  }
+}
+// 弹出层关闭时触发
+const handleClose = () => {
+  if (!isNullOrUnDef(isOperationVisible)) {
+    isOperationVisible.value = true
+  }
 }
 
 // 清空选择
 const handleClear = () => {
   emit('update:modelValue', '')
   emit('change', '')
+  if (!isNullOrUnDef(isOperationVisible)) {
+    isOperationVisible.value = true
+  }
 }
 
 // 点击输入框
@@ -295,6 +318,9 @@ const handleClick = () => {
     initData()
     initializePickerValue()
     popupShow.value = true
+    if (!isNullOrUnDef(isOperationVisible)) {
+      isOperationVisible.value = false
+    }
   }
 }
 </script>
@@ -328,7 +354,7 @@ const handleClick = () => {
       position: absolute;
       right: 15px;
       top: calc(14px + 4px);
-      color: #585858;
+      color: var(--wot-input-clear-color);
       font-size: 15px;
     }
     &.clear {

@@ -72,7 +72,9 @@ onMounted(() => {
   queryData();
 });
 
-
+defineExpose({
+  queryData
+});
 </script>
 
 <style scoped lang="scss">

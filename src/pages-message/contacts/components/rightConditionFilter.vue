@@ -4,7 +4,7 @@
       <wd-text v-if="title" :text="title"></wd-text>
       <wd-cell-group border>
         <wd-radio-group v-model="checked">
-          <template v-for="(item, index) in options">
+          <template v-for="(item, index) in options" :key="index">
             <wd-cell :title="item.title" clickable @click="handleSelected(item)">
               <wd-radio :value="item.key"></wd-radio>
             </wd-cell>

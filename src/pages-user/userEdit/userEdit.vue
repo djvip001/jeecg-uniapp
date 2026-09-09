@@ -167,7 +167,7 @@ function handleSubmit() {
               toast.success('修改成功~')
               setTimeout(() => {
                 userStore.editUserInfo({ ...data })
-                router.replaceAll({ name: 'people' })
+                router.replaceAll({ name: 'home', params: { current: 'people' } })
               }, 1e3)
             } else {
               toast.warning(res.message)

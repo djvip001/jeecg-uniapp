@@ -52,7 +52,7 @@ import { onShow, onHide, onLoad, onReady } from '@dcloudio/uni-app'
 import { ref } from 'vue'
 import workmate from './components/workmate.vue'
 import department from './components/department.vue'
-import rightConditionFilter from '@/components/RightConditionFilter/RightConditionFilter.vue'
+import rightConditionFilter from '@/pages-message/contacts/components/rightConditionFilter.vue'
 
 defineOptions({
   name: 'tenant',

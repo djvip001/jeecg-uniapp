@@ -1,5 +1,5 @@
 <template>
-  <view class="content">
+  <view class="content" :style="{height:izDrill?'calc(100% - 10px)':'100%'}">
     <statusTip v-if="pageTips.show" :status="pageTips.status"></statusTip>
     <!-- #ifdef H5 -->
     <EchartsH5 v-else :option="option" :map="mapObject" :echartId="echartId" />
@@ -331,14 +331,13 @@ export default {
 
       // 1. 获取 DOM 元素（APP 端可以直接用 document.getElementById）
       const dom = document.getElementById(this.echartId || 'bar-map-chart');
-	  console.error("柱形图dom",dom);
 
       if (!dom) {
         console.error("JBarMap DOM 元素未找到！");
         return;
       }
 
-     if (this.mapData.code) {
+     if (this.mapData && this.mapData.code && this.myBarEchart) {
       // 2. 初始化 ECharts
        this.barMapChart = this.myBarEchart.init(dom);
 		// 3. 注册地图数据（如果有）
@@ -374,7 +373,7 @@ export default {
     // 确保 ECharts 已加载
     if (this.myBarEchart  === null) {
       const script = document.createElement('script');
-      script.src = 'uni_modules/lime-echart/static/echarts.js';
+      script.src = 'uni_modules/lime-echart/static/echarts.min.js';
       script.onload = () => {
           this.myBarEchart = echarts; // 挂载到window
           this.initEchart();

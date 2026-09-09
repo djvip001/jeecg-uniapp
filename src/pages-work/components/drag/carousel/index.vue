@@ -114,6 +114,9 @@ const isApi = (config) => {
     })
   }
 }
+defineExpose({
+  queryData
+});
 </script>
 
 <style></style>

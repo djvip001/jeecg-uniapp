@@ -1,5 +1,5 @@
 import { geoDistance } from '@/common/uitls'
-// #ifdef MP-WEIXIN || APP-PLUS
+// #ifdef MP-WEIXIN || APP-PLUS || APP-HARMONY
 import amap from '@/common/js-sdk/js-amap/amap-wx'
 // #endif
 
@@ -50,8 +50,8 @@ export default function useGeo<T>({ compLatitude, compLongitude }, emit?) {
     getAuthorizeInfo()
     // #endif
 
-    // #ifdef APP-PLUS
-    getLocationInfo()
+    // #ifdef APP-PLUS || APP-HARMONY
+    getAuthorizeInfo()
     // #endif
 
     // #ifdef H5
@@ -267,7 +267,7 @@ export default function useGeo<T>({ compLatitude, compLongitude }, emit?) {
   }
   // #endif
   onBeforeMount(() => {
-    // #ifdef MP-WEIXIN || APP-PLUS
+    // #ifdef MP-WEIXIN || APP-PLUS || APP-HARMONY
     amapPlugin.value = new amap.AMapWX({
       key: wxMapKey,
     })

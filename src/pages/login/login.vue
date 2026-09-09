@@ -69,7 +69,7 @@
           </view>
         </view>
         <view class="btn-area text-center">
-          <wd-button  custom-class="login align-top" :loading="loading" @click="hanldeLogin">
+          <wd-button custom-class="login align-top" :loading="loading" @click="hanldeLogin">
             {{ loading ? '登录...' : '登录' }}
           </wd-button>
           <wd-button v-if="loginWay == 2" plain hairline @click="toggleLoginWay(1)">
@@ -86,10 +86,12 @@
 </template>
 
 <script lang="ts" setup>
-import { useNotify, useToast } from 'wot-design-uni'
+import { useToast } from 'wot-design-uni/components/wd-toast'
+import { useNotify } from 'wot-design-uni/components/wd-notify'
 import { ref } from 'vue'
 import { useUserStore } from '@/store/user'
 import { http } from '@/utils/http'
+import { encryptAESCBC } from '@/common/uitls'
 import {
   ACCESS_TOKEN,
   USER_NAME,
@@ -98,11 +100,13 @@ import {
   APP_CONFIG,
   HOME_CONFIG_EXPIRED_TIME,
   HOME_PAGE,
+  HOME_PAGE_LOCAL,
 } from '@/common/constants'
 
 import { cache, getFileAccessHttpUrl } from '@/common/uitls'
 import { useRouter } from '@/plugin/uni-mini-router'
 import { useParamsStore } from '@/store/page-params'
+import appBadge from '@/common/appBadge'
 
 defineOptions({
   name: 'login',
@@ -131,7 +135,7 @@ const compTitle = ref('Jeecg Uniapp')
 const paramsStore = useParamsStore()
 paramsStore.reset()
 // 是否开启本地路由配置
-let isLocalConfig = getApp().globalData.isLocalConfig;
+let isLocalConfig = getApp().globalData.isLocalConfig
 if (import.meta.env.MODE === 'development') {
   userName.value = 'admin'
   password.value = '123456'
@@ -193,7 +197,26 @@ const getSendBtnText = computed(() => {
     return '发送验证码'
   }
 })
+// 绑定client
+const saveClientId = () => {
+  var info = plus.push.getClientInfo()
+  var cid = info.clientid
+  http.get('/sys/user/saveClientId', { clientId: cid })
+  
+  // uni.getPushClientId({
+  //   success: (res) => {
+  //     const cid = res.cid
+  //     console.log('获取到的 clientid:', cid)
+  //     http.get('/sys/user/saveClientId', { clientId: cid })
+  //   },
+  //   fail: (err) => {
+  //     console.log('获取 clientid 失败:', err);
+  //   }
+  // });
+}
 const hanldeLogin = () => {
+  // TODO 点击登录的时候清除所有的本地缓存（解决线上打开门户页不显示的问题）
+  uni.clearStorageSync()
   loginWay.value === 1 ? accountLogin() : phoneLogin()
 }
 const accountLogin = () => {
@@ -207,24 +230,14 @@ const accountLogin = () => {
   }
   loading.value = true
   http
-    .post('/sys/mLogin', { username: userName.value, password: password.value })
+    .post('/sys/mLogin', { username: userName.value, password: encryptAESCBC(password.value) })
     .then((res: any) => {
       if (res.success) {
         const { result } = res
-        const userInfo = result.userInfo
-        userStore.setUserInfo({
-          ...userInfo,
-          token: result.token,
-          userid: userInfo.id,
-          username: userInfo.username,
-          realname: userInfo.realname,
-          avatar: userInfo.avatar,
-          tenantId: userInfo.loginTenantId,
-          localStorageTime: +new Date(),
-        })
-        appConfig()
-        departConfig()
-        router.pushTab({ path: HOME_PAGE })
+        // update-begin--author:liaozhiyang---date:20250701---for：【QQYUN-12170】门户
+        setUserInfo(result)
+        loginInit(result)
+        // update-end--author:liaozhiyang---date:20250701---for：【QQYUN-12170】门户
       } else {
         toast.warning(res.message)
       }
@@ -258,19 +271,8 @@ const phoneLogin = () => {
     .then((res: any) => {
       if (res.success) {
         const { result } = res
-        const userInfo = result.userInfo
-        userStore.setUserInfo({
-          token: result.token,
-          userid: userInfo.id,
-          username: userInfo.username,
-          realname: userInfo.realname,
-          avatar: userInfo.avatar,
-          tenantId: userInfo.loginTenantId,
-          localStorageTime: +new Date(),
-        })
-        //获取app配置
-        appConfig()
-        departConfig()
+        setUserInfo(result)
+        loginInit(result)
       } else {
         toast.warning(res.message)
       }
@@ -280,17 +282,30 @@ const phoneLogin = () => {
       toast.warning(msg)
     })
 }
+
+/**
+ * 登录初始化
+ */
+function loginInit(result) {
+  getUserInfo(result.token)
+  setDictItems(result.sysAllDictItems)
+  // #ifdef APP-PLUS
+  saveClientId()
+  // 角标设置
+  appBadge()
+  // #endif
+}
 //部門配置
 const departConfig = () => {
   const appQueryUser = () => {
     http
       .get('/sys/user/appQueryUser', {
-        username:userStore.userInfo.username,
+        username: userStore.userInfo.username,
       })
       .then((res: any) => {
         if (res.success && res.result.length) {
-          let result = res.result[0];
-          userStore.editUserInfo({orgCodeTxt: result.orgCodeTxt})
+          const result = res.result[0]
+          userStore.editUserInfo({ orgCodeTxt: result.orgCodeTxt })
         }
       })
   }
@@ -299,7 +314,7 @@ const departConfig = () => {
 const appConfig = () => {
   if (isLocalConfig) {
     toast.success('登录成功!')
-    router.pushTab({ path: HOME_PAGE })
+    router.replace({ path: HOME_PAGE_LOCAL })
   } else {
     http
       .get('/eoa/sysAppConfig/queryAppConfigRoute')
@@ -309,11 +324,11 @@ const appConfig = () => {
           cache(APP_CONFIG, res.result.config, HOME_CONFIG_EXPIRED_TIME)
         }
         toast.success('登录成功!')
-        router.pushTab({ path: HOME_PAGE })
+        router.replace({ path: HOME_PAGE })
       })
       .catch((err) => {
         toast.success('登录成功!')
-        router.pushTab({ path: HOME_PAGE })
+        router.replace({ path: HOME_PAGE })
       })
   }
 }
@@ -338,11 +353,53 @@ const checkToken = () => {
       // 超过2小时过期
       clearUserInfo()
     } else {
-      router.pushTab({ path: HOME_PAGE })
+      router.replace({ path: HOME_PAGE })
     }
   } else {
     clearUserInfo()
   }
+}
+const getUserInfo = (token) => {
+  http
+    .get('/sys/user/getUserInfo')
+    .then((res: any) => {
+      if (res.success) {
+        const { result } = res
+        result.token = token
+        setUserInfo(result)
+        // 获取app配置
+        appConfig()
+        departConfig()
+        setDictItems(result.sysAllDictItems)
+      } else {
+        toast.warning(res.message)
+      }
+    })
+    .finally(() => {
+      loading.value = false
+    })
+}
+const setDictItems = (result) => {
+  const dictItems = result ?? {}
+  uni.setStorageSync('sysAllDictItems', dictItems)
+}
+const setUserInfo = (result) => {
+  const userInfo = result.userInfo
+  userStore.setUserInfo({
+    ...userInfo,
+    token: result.token,
+    userid: userInfo.id,
+    username: userInfo.username,
+    realname: userInfo.realname,
+    avatar: userInfo.avatar,
+    tenantId: userInfo.loginTenantId,
+    localStorageTime: +new Date(),
+    phone: userInfo.phone,
+    email: userInfo.email,
+    sex: userInfo.sex,
+    birthday: userInfo.birthday,
+    homePath: userInfo.homePath ?? '/portal-view/system',
+  })
 }
 const checkAccount = () => {}
 // #ifdef APP-PLUS || H5

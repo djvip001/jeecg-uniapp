@@ -48,4 +48,8 @@ export const echartProps = {
         type: String,
         default: ''
     },
+    izDrill: {
+        type: Boolean,
+        default: false
+    },
 }

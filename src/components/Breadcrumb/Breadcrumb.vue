@@ -51,9 +51,12 @@ const handleClick = (item: BreadcrumbItem, index: number) => {
   font-size: 14px;
   line-height: 1.5;
   padding: 8px;
+  width: calc(100% - 16px);
+  overflow: auto;
+  white-space: nowrap;
   &-item {
     &.is-link {
-      color: rgba(0, 0, 0, 0.45);
+      color: var(--color-blue);
       cursor: pointer;
       transition: color 0.3s;
     }

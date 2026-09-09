@@ -8,7 +8,7 @@
     <!-- #endif -->
 
     <!-- #ifdef MP-WEIXIN  -->
-    <wd-status-tip image="content" tip="暂不支持" />
+    <wd-status-tip url-prefix="/static/wot-assets/" image="content" tip="暂不支持" />
     <!-- #endif -->
   </view>
 </template>

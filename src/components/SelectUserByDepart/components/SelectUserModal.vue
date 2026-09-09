@@ -62,8 +62,14 @@
                               @change="($event) => handleSearchDepartCheck($event, item)"
                             />
                           </view>
-                          <view class="search-depart-item-name">{{ item.departName }}</view>
-                          <wd-icon name="arrow-right" size="16px"></wd-icon>
+                          <view class="search-depart-item-name">
+                            {{ getDepartName(item.departName, item.departNameAbbr) }}
+                          </view>
+                          <wd-icon
+                            custom-class="icon-arrow"
+                            name="arrow-right"
+                            size="16px"
+                          ></wd-icon>
                         </view>
                       </template>
                     </view>
@@ -76,7 +82,10 @@
                     separator="/"
                     :items="[
                       { title: '首页', icon: 'home' },
-                      ...breadcrumb.map((item) => ({ title: item.departName, ...item })),
+                      ...breadcrumb.map((item) => ({
+                        ...item,
+                        title: getDepartName(item.departName, item.departNameAbbr),
+                      })),
                     ]"
                     @click="(item, index) => handleBreadcrumbClick(index === 0 ? undefined : item)"
                   >
@@ -122,6 +131,22 @@
                         </div>
                       </div>
                     </template>
+                    <!-- 分页加载更多 -->
+                    <div
+                      v-if="!currentDepartHasChildren && currentDepartUsers.length > 0"
+                      class="load-more-wrap solid-top"
+                    >
+                      <template v-if="userLoading">
+                        <wd-loading size="20px" />
+                        <text class="load-more-text">加载中...</text>
+                      </template>
+                      <template v-else-if="userFinished">
+                        <text class="load-more-text">没有更多了</text>
+                      </template>
+                      <template v-else>
+                        <text class="load-more-text load-more-btn" @click="loadMoreUsers">点击加载更多</text>
+                      </template>
+                    </div>
                   </div>
                 </div>
                 <!-- 部门树 -->
@@ -135,8 +160,10 @@
                           @change="($event) => handleDepartTreeCheck($event, item)"
                         />
                       </view>
-                      <div class="depart-tree-item-name">{{ item.departName }}</div>
-                      <wd-icon name="arrow-right" size="16px"></wd-icon>
+                      <div class="depart-tree-item-name">
+                        {{ getDepartName(item.departName, item.departNameAbbr) }}
+                      </div>
+                      <wd-icon custom-class="icon-arrow" name="arrow-right" size="16px"></wd-icon>
                     </div>
                   </template>
                 </div>
@@ -144,7 +171,7 @@
                   v-if="currentDepartTree.length === 0 && currentDepartUsers.length === 0"
                   class="no-data"
                 >
-                  <wd-status-tip image="content" tip="暂无内容" />
+                  <wd-status-tip url-prefix="/static/wot-assets/" image="content" tip="暂无内容" />
                 </div>
               </template>
             </scroll-view>
@@ -169,7 +196,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, nextTick } from 'vue'
+import { ref, reactive, computed, nextTick } from 'vue'
 import { useToast, useMessage, useNotify, dayjs } from 'wot-design-uni'
 import { http } from '@/utils/http'
 import { isArray, isString } from '@/utils/is'
@@ -204,12 +231,17 @@ const props = defineProps({
     type: String,
     default: 'username',
   },
+  // 是否启用公司简称
+  useCompanyShortName: {
+    type: Boolean,
+    default: true,
+  },
 })
 const api = {
   selectUserList: '/sys/user/selectUserList',
   userlist: '/sys/user/list',
   queryTreeList: '/sys/sysDepart/queryTreeList',
-  getTableList: '/sys/user/queryUserComponentData',
+  getTableList: '/sys/user/queryDepartPostByOrgCode',
 }
 const emit = defineEmits(['change', 'close'])
 const selector = uuid()
@@ -239,6 +271,16 @@ const searchResult: any = reactive({
 const cacheDepartUser = {}
 // 是否显示已选用户
 const showSelectedUser = ref(false)
+// 分页相关状态
+const userPageNo = ref(1)
+const userPageSize = ref(10)
+const userTotal = ref(0)
+const userLoading = ref(false)
+const userFinished = computed(() => currentDepartUsers.value.length >= userTotal.value)
+// 当前部门id（用于分页加载）
+const currentDepartOrgCode = ref('')
+// 当前部门是否有子节点（有子节点时不分页）
+const currentDepartHasChildren = ref(false)
 const handleClose = () => {
   setTimeout(() => {
     emit('close')
@@ -248,6 +290,9 @@ const handleConfirm = () => {
   if (selectedUsers.value.length == 0) {
     toast.warning('还没选择用户~')
     return
+  }
+  if (props.multi == false && selectedUsers.value.length > 1) {
+
   }
   show.value = false
   let result = []
@@ -331,7 +376,7 @@ const handleDepartTreeCheck = ({ value }, item) => {
   const target = { checked: value }
   if (target.checked) {
     // 选中
-    getUsersByDeptId(item['id']).then((users) => {
+    getUsersByDeptId(item.orgCode).then((users) => {
       addUsers(users)
     })
     checkedDepartIds.value.push((item as any).id)
@@ -356,7 +401,7 @@ const handleDepartTreeCheck = ({ value }, item) => {
     if (parentItem) {
       parentItem.checked = false
     }
-    getUsersByDeptId(item['id']).then((users) => {
+    getUsersByDeptId(item.orgCode).then((users) => {
       users.forEach((item) => {
         const findIndex = selectedUsers.value.findIndex((user) => user.id === item.id)
         if (findIndex != -1) {
@@ -371,6 +416,7 @@ const handleDepartTreeClick = (item) => {
   breadcrumb.value = [...breadcrumb.value, item]
   if (item.children) {
     // 有子节点，则显示部门
+    currentDepartHasChildren.value = true
     if (item.checked) {
       // 父节点勾选，则子节点全部勾选
       item.children.forEach((item) => {
@@ -390,35 +436,68 @@ const handleDepartTreeClick = (item) => {
             item.checked = true
           })
         }
-        currentDepartUsers.value = result
+        currentDepartUsers.value = result.sort((a, b) => a.sort - b.sort)
       })
   } else {
-    // 没有子节点，则显示用户
+    // 没有子节点，则分页加载用户
     currentDepartTree.value = []
-    getTableList({
-      departId: item['id'],
-    }).then((res: any) => {
+    currentDepartOrgCode.value = item.orgCode
+    currentDepartHasChildren.value = false
+    userPageNo.value = 1
+    userTotal.value = 0
+    currentDepartUsers.value = []
+    loadUsersByPage(item.orgCode, 1, item.checked)
+  }
+}
+// 分页加载用户
+const loadUsersByPage = (orgCode: string, pageNo: number, parentChecked = false) => {
+  userLoading.value = true
+  getTableList({
+    orgCode,
+    pageNo,
+    pageSize: userPageSize.value,
+  })
+    .then((res: any) => {
+      userLoading.value = false
       if (res.success) {
-        if (res?.result.records) {
+        if (res?.result?.records) {
           let checked = true
           res.result.records.forEach((item) => {
             const findItem = selectedUsers.value.find((user) => user.id == item.id)
-            if (findItem) {
-              // 能在右侧找到说明选中了，左侧同样需要选中。
+            if (findItem || parentChecked) {
               item.checked = true
             } else {
               item.checked = false
               checked = false
             }
           })
-          currentDepartAllUsers.value = checked
-          currentDepartUsers.value = res.result.records
+          const newRecords = res.result.records.sort((a, b) => a.sort - b.sort)
+          if (pageNo === 1) {
+            currentDepartUsers.value = newRecords
+          } else {
+            currentDepartUsers.value = [...currentDepartUsers.value, ...newRecords]
+          }
+          userTotal.value = res.result.total || 0
+          userPageNo.value = pageNo
+          if (currentDepartUsers.value.length >= userTotal.value) {
+            currentDepartAllUsers.value = currentDepartUsers.value.every((item: any) => !!item.checked)
+          } else {
+            currentDepartAllUsers.value =
+              checked && currentDepartUsers.value.every((item: any) => !!item.checked)
+          }
         } else {
           toast.warning(res.message)
         }
       }
     })
-  }
+    .catch(() => {
+      userLoading.value = false
+    })
+}
+// 加载更多用户
+const loadMoreUsers = () => {
+  if (userLoading.value || userFinished.value) return
+  loadUsersByPage(currentDepartOrgCode.value, userPageNo.value + 1)
 }
 // 点击部门用户树复选框触发
 const handleDepartUsersTreeCheck = (item, e?) => {
@@ -440,8 +519,8 @@ const handleDepartUsersTreeCheck = (item, e?) => {
   }
 }
 // 全选
-const handleAllUsers = ({ target }) => {
-  const { checked } = target
+const handleAllUsers = (e) => {
+  const { value: checked } = e
   if (checked) {
     currentDepartUsers.value.forEach((item: any) => (item.checked = true))
     addUsers(currentDepartUsers.value)
@@ -528,16 +607,16 @@ const getTableList = (params) => {
   params = parseParams(params)
   return getTableListOrigin({ ...params })
 }
-const getUsersByDeptId = (id) => {
+const getUsersByDeptId = (orgCode: string) => {
   return new Promise<any[]>((resolve) => {
-    if (cacheDepartUser[id]) {
-      resolve(cacheDepartUser[id])
+    if (cacheDepartUser[orgCode]) {
+      resolve(cacheDepartUser[orgCode])
     } else {
       getTableList({
-        departId: id,
+        orgCode,
       }).then((res: any) => {
         if (res.success) {
-          cacheDepartUser[id] = res?.result?.records ?? []
+          cacheDepartUser[orgCode] = res?.result?.records ?? []
           if (res?.result?.records?.length) {
             resolve(res.result.records ?? [])
           }
@@ -583,7 +662,11 @@ const getDepartByName = (name: string, tree = departTree.value): any[] => {
   const result: any[] = []
   const search = (nodes: any[]) => {
     for (const node of nodes) {
-      if (node.departName?.toLowerCase().includes(name.toLowerCase())) {
+      if (
+        getDepartName(node.departName, node.departNameAbbr)
+          ?.toLowerCase()
+          .includes(name.toLowerCase())
+      ) {
         result.push(node)
       }
       if (node.children?.length) {
@@ -617,6 +700,13 @@ const queryTreeList = (params = {}) => {
 const getTableListOrigin = (params = {}) => {
   return http.get(api.getTableList, { ...params })
 }
+// 获取部门名称（如果启用公司简称且公司简称不为空，则返回公司简称）
+function getDepartName(departName, departNameAbbr) {
+  if (props.useCompanyShortName && departNameAbbr) {
+    return departNameAbbr
+  }
+  return departName
+}
 // 初始化
 const init = () => {
   if (props.selectedUser.length) {
@@ -630,7 +720,7 @@ init()
 
 <style lang="scss" scoped>
 .wrap {
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -644,7 +734,10 @@ init()
   flex: 1;
   position: relative;
   overflow: hidden;
-  color: var(--color-grey);
+  color: #555;
+  :deep(.icon-arrow) {
+    color: rgba(0, 0, 0, 0.25);
+  }
   .breadcrumb-wrap {
     background-color: #fff;
   }
@@ -723,6 +816,22 @@ init()
       }
       .depart-users-tree-item-name {
         margin-left: 8px;
+      }
+    }
+    .load-more-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 0;
+      background-color: #fff;
+      .load-more-text {
+        font-size: 13px;
+        color: #999;
+        margin-left: 6px;
+      }
+      .load-more-btn {
+        color: #1989fa;
+        margin-left: 0;
       }
     }
   }

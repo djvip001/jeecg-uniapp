@@ -87,6 +87,7 @@
     "useCssModule": true,
     "useCssVars": true,
     "useGeoPosition": true,
+    "useGeoSign": true,
     "useId": true,
     "useModel": true,
     "usePageList": true,

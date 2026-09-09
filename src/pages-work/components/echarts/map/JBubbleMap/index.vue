@@ -1,5 +1,5 @@
 <template>
-  <view class="content">
+  <view class="content" :style="{height:izDrill?'calc(100% - 10px)':'100%'}">
     <statusTip v-if="pageTips.show" :status="pageTips.status"></statusTip>
     <!-- #ifdef H5 -->
     <EchartsMap v-else v-model:option="option" v-model:map="mapObject" v-model:echartId="echartId" />

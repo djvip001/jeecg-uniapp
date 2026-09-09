@@ -1,5 +1,5 @@
 <template>
-  <view class="pageLayout">
+  <view class="pageLayout" :style="rootStyle">
     <view
       v-if="navbarShow"
       :class="{ pageNav: true, transparent: navBgTransparent, fixed: navFixed }"
@@ -56,7 +56,8 @@
 import { useSlots } from 'vue'
 import { useRouter } from '@/plugin/uni-mini-router'
 import { useParamsStore } from '@/store/page-params'
-import { isMp } from '@/utils/platform'
+import { isMp, isH5 } from '@/utils/platform'
+import { HOME_PAGE } from '@/common/constants'
 // const isMp = true
 defineOptions({
   name: 'pageLayout',
@@ -136,6 +137,11 @@ const props = defineProps({
     typeof: Boolean,
     default: true,
   },
+  // 减去额外的高度
+  minusHeight: {
+    typeof: Number,
+    default: 0,
+  },
 })
 const slot = useSlots()
 const globalData = getApp().globalData
@@ -147,6 +153,13 @@ const handleClickLeft = () => {
   // 只有在页面中才默认返回，弹层中不返回
   if (props.type === 'page') {
     const pages = getCurrentPages()
+    // update-begin--author:liaozhiyang---date:20260813---for:【LHZP-1639】h5刷新后点击返回，返回到门户页
+    if (isH5 && pages.length <= 1) {
+      clearPageParamsCache()
+      router.replace({ path: HOME_PAGE, query: { current: 'index' } })
+      return
+    }
+    // update-end--author:liaozhiyang---date:20260813---for:【LHZP-1639】h5刷新后点击返回，返回到门户页
     if (props.backRouteName || props.backRoutePath) {
       const prevPage = pages[pages.length - 2]
       if (prevPage) {
@@ -158,13 +171,23 @@ const handleClickLeft = () => {
           return
         }
       }
+      // update-begin--author:liaozhiyang---date:20250917---for：【JHHB-551】指定路由返回报错，兜底返回上一层
       if (props.backRouteName) {
-        router[props.routeMethod]({ name: props.backRouteName, params: props.routeParams })
+        router[props.routeMethod]({ name: props.backRouteName, params: props.routeParams }).catch(
+          () => {
+            router.back()
+          },
+        )
         clearPageParamsCache()
       } else {
-        router[props.routeMethod]({ name: props.backRoutePath, query: props.routeQuery })
+        router[props.routeMethod]({ name: props.backRoutePath, query: props.routeQuery }).catch(
+          () => {
+            router.back()
+          },
+        )
         clearPageParamsCache()
       }
+      // update-end--author:liaozhiyang---date:20250917---for：【JHHB-551】指定路由返回报错，兜底返回上一层
     } else {
       router.back()
       clearPageParamsCache()
@@ -187,6 +210,13 @@ const getClass = () => {
   return cls
 }
 console.log('props:', props)
+const rootStyle = computed(() => {
+  const result: any = {}
+  if (props.minusHeight) {
+    result.height = `calc(100vh - ${props.minusHeight}px)`
+  }
+  return result
+})
 </script>
 
 <style lang="scss" scoped>
@@ -194,7 +224,10 @@ console.log('props:', props)
   display: flex;
   flex-direction: column;
   width: 100vw;
-  height: 100vh;
+  height: 100vh; /* 兜底 */
+  /* #ifdef H5 */
+  height: 100dvh; /* H5 修复底部遮挡 */
+  /* #endif */
   .pageNav {
     background-image: linear-gradient(45deg, #0081ff, #1cbbb4);
     &.transparent {
@@ -231,8 +264,11 @@ console.log('props:', props)
           .wd-navbar__right {
             position: static;
           }
+          .btnGroup {
+            min-width: 92px;
+          }
           .wd-navbar__title {
-            max-width: none;
+            max-width: 50%;
           }
         }
       }

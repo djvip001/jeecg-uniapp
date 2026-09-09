@@ -1,7 +1,7 @@
 <template>
-  <view class="content">
+  <view class="content" :style="{height:izDrill?'calc(100% - 10px)':'100%'}">
     <statusTip v-if="pageTips.show" :status="pageTips.status"></statusTip>
-    <!-- #ifdef  H5 -->
+    <!-- #ifdef H5-->
     <EchartsMap
       v-else
       v-model:option="option"
@@ -62,8 +62,9 @@ const chartOption = ref({
     formatter: null,
   },
 })
+const mapName = ref('')
 let [
-  { dataSource, reload, pageTips, config, mapDataJson,mapName, getAreaCode, city_point },
+  { dataSource, reload, pageTips, config, mapDataJson, getAreaCode, city_point },
   {
     queryData,
     registerMap,
@@ -81,7 +82,7 @@ const mapObject = computed(() => ({ code: 'heatmap:'+getAreaCode.value, data: ma
 // 初始化配置选项
 async function initOption(data) {
   let chartData = dataSource.value
-  let mapName = 'heatmap:'+ await registerMap()
+  mapName.value = 'heatmap:'+ await registerMap()
   try {
     // 使用 registerMap 注册的地图名称
     //地图配置
@@ -99,13 +100,13 @@ async function initOption(data) {
       },
     }
     //使用 registerMap 注册的地图名称
-    chartOption.value.geo.map = mapName;
+    chartOption.value.geo.map = mapName.value;
     //配置项修改
     chartOption.value.series = [
       {
         name: '地图',
         type: 'map',
-        map: mapName,
+        map: mapName.value,
         geoIndex: 0,
         aspectScale: 0.75, //长宽比
         showLegendSymbol: false, // 存在legend时显示
@@ -208,15 +209,15 @@ export default {
         return;
       }
 
-     if (this.mapData.code) {
+     if (this.mapData && this.mapData.code && this.heatEchart) {
       // 2. 初始化 ECharts
-       this.myChart = echarts.init(dom);
+       this.myChart = this.heatEchart.init(dom);
 		// 3. 注册地图数据（如果有）
        this.heatEchart.registerMap(this.mapData.code, this.mapData.data);
      }
 
       // 4. 设置图表配置
-      this.myChart.setOption(this.option || {});
+      this.myChart && this.myChart.setOption(this.option || {});
 
       // 5. 监听窗口变化，自动调整大小
       window.addEventListener('resize', () => this.myChart.resize());
@@ -257,9 +258,9 @@ export default {
   },
   beforeDestroy() {
     // 销毁图表，防止内存泄漏
-    if (this.myChart) {
-      this.myChart.dispose();
-      window.removeEventListener('resize', () => this.myChart.resize());
+    if (this.heatEchart) {
+      this.heatEchart.dispose();
+      window.removeEventListener('resize', () => this.heatEchart.resize());
     }
   }
 };

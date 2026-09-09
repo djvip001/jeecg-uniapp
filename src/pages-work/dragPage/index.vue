@@ -23,14 +23,13 @@
     >
       <template v-if="dragData.compsData.length">
         <view v-for="(item, index) in dragData.compsData" :key="index">
-          <view
-            class="mt-4"
-            @tap="focusPane(item)"
-            :class="[dragData.style == 'bigScreen' ? 'bg-white' : 'bg-white']"
-            :id="'drag' + item.i"
-            :style="[getStyle(item)]"
-          >
-            <template v-if="compList.includes(item.component)">
+          <template v-if="compList.includes(item.component)">
+            <view
+              class="drag-block bg-white"
+              @tap="focusPane(item)"
+              :id="'drag' + item.i"
+              :style="[getStyle(item)]"
+            >
               <!-- #ifndef MP-WEIXIN -->
               <view
                 v-if="
@@ -50,6 +49,10 @@
                 :id="item.i"
                 :size="item.config?.size"
                 :config="item.config"
+                :izBigScreen="dragData.style !== 'default'"
+                :izDrill="
+                  hasDrill && currentIndexHasDrill(item) && !noActionList.includes(item.component)
+                "
               />
               <!-- #endif -->
               <!-- #ifdef MP-WEIXIN -->
@@ -60,24 +63,13 @@
                 :size="item.config?.size"
               ></dynamic-component>
               <!-- #endif -->
-            </template>
-            <template v-else>
-              <view
-                class="flex flex-col flex-justify-center flex-items-center"
-                style="min-height: 600upx; height: 100%"
-              >
-                <wd-icon name="info-circle-filled" size="64px"></wd-icon>
-                <view class="text-bold">
-                  <text>暂不支持</text>
-                </view>
-              </view>
-            </template>
-          </view>
+            </view>
+          </template>
         </view>
       </template>
       <template v-else>
-				<wd-status-tip image="content" tip="暂无内容" />
-			</template>
+        <wd-status-tip url-prefix="/static/wot-assets/" image="content" tip="暂无内容" />
+      </template>
     </scroll-view>
   </PageLayout>
 </template>
@@ -121,7 +113,7 @@ const getStyle = computed(() => {
   return (item: any) => {
     let component = item.component
     let isSetHeight = component === 'JDragEditor' ? false : true
-    if (['JText','JNumber','JRadioButton','JList','JFilterQuery','JProgress'].includes(component)) {
+    if (['JText','JNumber','JRadioButton','JList','JFilterQuery','JProgress','JForm'].includes(component)) {
       return {
         height: 'auto',
         zIndex: 1000,
@@ -141,11 +133,13 @@ const getStyle = computed(() => {
       zIndex: 1000,
       overflowX: 'auto',
       overflowY: 'hidden',
-      background: item?.config?.background || '#fff',
+      // eslint-disable-next-line eqeqeq
+      background: dragData.value.style == 'bigScreen' ? '#fff' : (item?.config?.background  || '#fff'),
       border: `1px solid ${item?.config?.borderColor || '#fff'}`,
     }
   }
 })
+
 const showBack = computed(() => {
   return (item: any) => {
     console.log('item', item)
@@ -163,18 +157,20 @@ function queryData() {
       dragData.value.name = result.name
       dragData.value.style = result?.style || 'default'
       title.value = result.name
-      template.forEach((item: any) => {
-        if (item.component === 'JFilterQuery') {
-          item['mobileY'] = 0
-        } else {
-          item['mobileY'] = item['mobileY'] || item['mobileY'] == 0 ? item['mobileY'] : 1
-        }
-        if (item.config.filter && !item.config.filter.customTime) {
-          item.config.filter['customTime'] = []
-        }
-      })
-      template.sort((a, b) => a.mobileY - b.mobileY)
-      dragData.value.compsData = template || []
+      if(template && template.length > 0){
+        template.forEach((item: any) => {
+          if (item.component === 'JFilterQuery') {
+            item['mobileY'] = 0
+          } else {
+            item['mobileY'] = item['mobileY'] || item['mobileY'] == 0 ? item['mobileY'] : 1
+          }
+          if (item.config.filter && !item.config.filter.customTime) {
+            item.config.filter['customTime'] = []
+          }
+        })
+        template.sort((a, b) => a.mobileY - b.mobileY)
+        dragData.value.compsData = template || []
+      }
     }
   })
 }
@@ -185,10 +181,10 @@ let { drillBack, hasDrill } = useLinkage(currentIndex)
 function currentIndexHasDrill(item) {
   console.log('currentIndexHasDrill:item', item)
   if (item.i == currentIndex.value) {
-    let drillLocalJson = cache('drill:' + item.i)
+    const drillLocalJson = cache('drill:' + item.i)
     console.log('currentIndexHasDrill:drillLocalJson', drillLocalJson)
     if (drillLocalJson) {
-      let drillParamArr = JSON.parse(drillLocalJson)
+      const drillParamArr = JSON.parse(drillLocalJson)
       if (drillParamArr && drillParamArr.length >= 0) {
         return true
       }
@@ -205,7 +201,7 @@ function focusPane(item) {
 }
 
 onLoad((option) => {
-  let params: any = option
+  const params: any = option
   pageId.value = params.id
   queryData()
 })
@@ -217,7 +213,11 @@ onLoad((option) => {
   justify-content: flex-end;
   align-items: center;
   font-weight: bold;
-  font-size: 14px;
-  padding: 10px 20px;
+  font-size: 12px;
+  padding: 2px 10px 0 0;
+}
+.drag-block {
+  margin: 14px 14px 0 14px;
+  border-radius: 10px;
 }
 </style>

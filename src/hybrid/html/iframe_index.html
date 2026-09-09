@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>JEECG BOOT</title>
     <style type="text/css">
 
@@ -15,8 +15,8 @@
 <body>
 <iframe id="iframe" frameborder="0" ></iframe>
 
-<!-- uni 的 SDK -->
-<script type="text/javascript" src="https://js.cdn.aliyun.dcloud.net.cn/dev/uni-app/uni.webview.1.5.2.js"></script>
+<!-- uni SDK 改为本地引用，避免外网 CDN 失败导致 wrapper 卡死；wrapper 本身也不再强依赖此 SDK  https://js.cdn.aliyun.dcloud.net.cn/dev/uni-app/uni.webview.1.5.2.js -->
+<script type="text/javascript" src="js/uni.webview.1.5.2.js"></script>
 
 <script type="text/javascript">
     let mId;

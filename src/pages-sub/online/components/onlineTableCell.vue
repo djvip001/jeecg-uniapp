@@ -3,12 +3,9 @@
     <!--图片-->
     <template v-if="column?.scopedSlots?.customRender === 'imgSlot'">
       <template v-if="record[column.dataIndex]">
-        <wd-img
-          width="30"
-          height="30"
-          :src="getFirstImg(record[column.dataIndex])"
-          @click="handleClickImg"
-        ></wd-img>
+        <view @click.stop="handleClickImg">
+          <wd-img width="30" height="30" :src="getFirstImg(record[column.dataIndex])"></wd-img>
+        </view>
         <ImgPreview
           v-if="imgPreview.show"
           :urls="imgPreview.urls"
@@ -22,7 +19,12 @@
     <!--下载-->
     <template v-else-if="column?.scopedSlots?.customRender === 'fileSlot'">
       <template v-if="record[column.dataIndex]">
-        <wd-button @click.stop="handleDownload(record[column.dataIndex])">下载</wd-button>
+		<!-- #ifdef H5 -->
+		<wd-button @click.stop="handleDownload(record[column.dataIndex])">下载</wd-button>
+		<!-- #endif -->
+		<!-- #ifndef H5 -->
+		<button size="mini" type="primary" @tap.stop="handleDownload(record[column.dataIndex])">下载</button>
+		<!-- #endif -->
       </template>
       <template v-else>
         <text>无文件</text>

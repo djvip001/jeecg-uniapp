@@ -12,7 +12,13 @@
 }
 </route>
 <template>
-  <PageLayout backRouteName="online" :navTitle="navTitle">
+  <!-- update-begin-author:liaozhiyang date:2026-08-11 for:【LHZP-1292】应用快捷入口新增online和表单设计器 -->
+  <PageLayout
+    :backRouteName="pageParams.backRouteName || 'online'"
+    :routeMethod="pageParams.routeMethod || 'replace'"
+    :navTitle="navTitle"
+  >
+    <!-- update-end-author:liaozhiyang date:2026-08-11 for:【LHZP-1292】应用快捷入口新增online和表单设计器 -->
     <view class="wrap">
       <z-paging
         ref="paging"
@@ -22,29 +28,43 @@
         :default-page-size="15"
       >
         <template v-for="(item, index) in dataList" :key="item.id">
-          <wd-swipe-action>
-            <view class="list" @click="handleEdit(item)">
-              <template v-for="(cItem, cIndex) in columns" :key="cIndex">
-                <view v-if="cIndex < 3" class="box" :style="getBoxStyle">
-                  <view class="field ellipsis">{{ cItem['title'] }}</view>
-                  <view class="value cu-text-grey">
-                    <onlineTableCell
-                      :columnsInfo="columnsInfo"
-                      :record="item"
-                      :column="cItem"
-                      :key="item.id"
-                    ></onlineTableCell>
+          <view>
+            <wd-swipe-action :key="item.id">
+              <view class="list" @click="handleEdit(item)">
+                <template v-for="(cItem, cIndex) in columns" :key="cIndex">
+                  <view v-if="cIndex < 3" class="box" :style="getBoxStyle">
+                    <view class="field ellipsis">{{ cItem['title'] }}</view>
+                    <view class="value cu-text-grey">
+                      <onlineTableCell
+                        :columnsInfo="columnsInfo"
+                        :record="item"
+                        :column="cItem"
+                        :key="item.id"
+                      ></onlineTableCell>
+                    </view>
+                  </view>
+                </template>
+              </view>
+              <template #right>
+                <view class="action">
+                  <view
+                    class="button del"
+                    :class="{ disabled: !canDelete(item) }"
+                    @click="handleAction('del', item)"
+                  >
+                    删除
+                  </view>
+                  <view
+                    v-if="item.bpm_status && item.bpm_status == '1'"
+                    class="button bpm"
+                    @click="handleAction('bpm', item)"
+                  >
+                    提交流程
                   </view>
                 </view>
               </template>
-            </view>
-            <template #right>
-              <view class="action">
-                <view class="button" @click="handleAction('del', item)">删除</view>
-                <view class="button" v-if="item.bpm_status && item.bpm_status == '1'" @click="handleAction('bpm', item)">提交流程</view>
-              </view>
-            </template>
-          </wd-swipe-action>
+            </wd-swipe-action>
+          </view>
         </template>
       </z-paging>
       <view class="add u-iconfont u-icon-add" @click="handleAdd"></view>
@@ -155,25 +175,38 @@ const getData = () => {
       toast.error('加载表格数据失败~')
     })
 }
+/** 有 bpm_status 时仅 1、3 可删；无该字段时可删 */
+const canDelete = (item) => {
+  if (item.bpm_status === undefined || item.bpm_status === null) {
+    return true
+  }
+  return item.bpm_status == 1 || item.bpm_status == 3
+}
 const handleAction = (val, item) => {
   if (val == 'del') {
+    if (!canDelete(item)) {
+      toast.warning('当前流程状态不可删除')
+      return
+    }
     http.delete(`/online/cgform/api/form/${pageParams.id}/${item.id}`).then((res) => {
       toast.success('删除成功~')
       paging.value.reload()
     })
-  }else if(val == 'bpm'){
+  } else if (val == 'bpm') {
+    toast.loading('正在发起流程...')
     const url = '/act/process/extActProcess/startMutilProcess'
     const param = {
-      flowCode: 'onl_'+pageParams.tableName,
+      flowCode: 'onl_' + pageParams.tableName,
       id: item.id,
       formUrl: 'modules/bpm/task/form/OnlineFormDetail',
       formUrlMobile: 'check/onlineForm/detail',
     }
     http.post(url, param).then((res: any) => {
+      toast.close()
       if (res.success) {
         toast.success('流程已发起~')
         paging.value.reload()
-      }else{
+      } else {
         toast.warning(res.message)
       }
     })
@@ -215,7 +248,7 @@ const handleEdit = (record) => {
   })
 }
 onMounted(() => {
-  navTitle.value = pageParams?.tableTxt ||  'online在线表单';
+  navTitle.value = pageParams?.tableTxt || 'online在线表单'
   // 监听刷新列表事件
   uni.$on('refreshList', () => {
     getData()
@@ -257,13 +290,17 @@ onMounted(() => {
     flex: 1;
     height: 100%;
     color: #fff;
-    &:first-child {
-      min-width: 60px;
+    &.del {
+      min-width: 65px;
       background-color: #fa4350;
+      &.disabled {
+        background-color: #f7b2b2;
+        color: rgba(255, 255, 255, 0.7);
+      }
     }
-    &:last-child {
-       min-width: 100px;
-       background-color: #f0883a;
+    &.bpm {
+      min-width: 65px;
+      background-color: #f0883a;
     }
   }
 }
